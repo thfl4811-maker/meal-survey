@@ -1,0 +1,1363 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>학교급식 설문조사</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+/* Layout: 선생님 화면은 왼쪽 단계 목록 + 오른쪽 작업 영역, 학생 화면은 휴대폰 폭 한 장짜리 카드 흐름 */
+:root{
+  --bg:#f4f5f1; --surface:#ffffff; --surface-2:#eceee8; --line:#d9ddd3;
+  --fg:#1c241f; --fg-2:#56605a; --muted:#87908a;
+  --accent:#2d6a4f; --accent-ink:#ffffff; --accent-soft:#deebe3;
+  --warm:#b9502b; --warm-soft:#f6e3da; --bar:#3c8a64;
+  --l5:#2d6a4f; --l4:#8dbea4; --l3:#c6c9c1; --l2:#e8b49b; --l1:#b9502b;
+  --font-display:"Jua","Noto Sans KR",system-ui,sans-serif;
+  --font-body:"Noto Sans KR",system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#121613; --surface:#1a1f1b; --surface-2:#232924; --line:#323a34;
+  --fg:#e7ebe6; --fg-2:#b2bab3; --muted:#7f877f;
+  --accent:#6dbd94; --accent-ink:#0f1a14; --accent-soft:#213429;
+  --warm:#e0805a; --warm-soft:#3a251c; --bar:#5aab82;
+  --l5:#5aab82; --l4:#3b6a52; --l3:#555b56; --l2:#8a5642; --l1:#e0805a;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#121613; --surface:#1a1f1b; --surface-2:#232924; --line:#323a34;
+  --fg:#e7ebe6; --fg-2:#b2bab3; --muted:#7f877f;
+  --accent:#6dbd94; --accent-ink:#0f1a14; --accent-soft:#213429;
+  --warm:#e0805a; --warm-soft:#3a251c; --bar:#5aab82;
+  --l5:#5aab82; --l4:#3b6a52; --l3:#555b56; --l2:#8a5642; --l1:#e0805a;
+  color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--font-body);font-size:15px;line-height:1.6;margin:0;word-break:keep-all;overflow-wrap:anywhere}
+h1,h2,h3{margin:0;line-height:1.3;text-wrap:balance}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.num{font-variant-numeric:tabular-nums}
+
+/* 상단 */
+.top{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 16px;border-bottom:1px solid var(--line);background:var(--surface);position:sticky;top:env(safe-area-inset-top,0px);z-index:5}
+.brand{font-family:var(--font-display);font-size:20px;color:var(--accent);display:flex;align-items:center;gap:8px}
+.brand small{font-family:var(--font-body);font-size:12px;color:var(--muted);font-weight:500}
+.seg{display:inline-flex;background:var(--surface-2);border-radius:999px;padding:3px;margin-left:auto}
+.seg button{border:0;background:transparent;padding:6px 14px;border-radius:999px;cursor:pointer;font-weight:500;color:var(--fg-2)}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--fg);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.notice{background:var(--warm-soft);color:var(--fg);font-size:13px;padding:8px 16px}
+
+/* 선생님 화면 */
+.shell{display:grid;grid-template-columns:220px minmax(0,1fr);gap:24px;max-width:1180px;margin:0 auto;padding:24px 16px 64px}
+.steps{display:flex;flex-direction:column;gap:4px;position:sticky;top:76px;align-self:start}
+.steps button{display:flex;gap:10px;align-items:center;text-align:left;border:0;background:transparent;padding:10px 12px;border-radius:var(--r);cursor:pointer;color:var(--fg-2)}
+.steps button .n{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:700;background:var(--surface-2);flex:none}
+.steps button[aria-current="page"]{background:var(--surface);color:var(--fg);font-weight:700;box-shadow:0 0 0 1px var(--line)}
+.steps button[aria-current="page"] .n{background:var(--accent);color:var(--accent-ink)}
+.steps .when{font-size:11px;color:var(--muted);padding:14px 12px 2px;letter-spacing:.04em}
+@media (max-width:820px){
+  .shell{grid-template-columns:minmax(0,1fr);gap:16px;padding-top:16px}
+  .steps{position:static;flex-direction:row;overflow-x:auto;gap:4px}
+  .steps .when{display:none}
+  .steps button{white-space:nowrap;padding:8px 10px}
+}
+.main{min-width:0;display:flex;flex-direction:column;gap:20px}
+.main>.field{flex:none}
+.head h1{font-size:24px}
+.head p{margin:6px 0 0;color:var(--fg-2);max-width:68ch}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.panel h2{font-size:17px}
+.panel h3{font-size:15px}
+.sub{color:var(--fg-2);font-size:13px;margin:0}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
+.field{display:flex;flex-direction:column;gap:6px;min-width:0}
+.row>.field{flex:1 1 180px}
+.field label,.lbl{font-size:13px;font-weight:500;color:var(--fg-2)}
+input[type=text],input[type=url],input[type=number],input[type=date],select,textarea{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:9px 11px}
+textarea{resize:vertical;min-height:84px;line-height:1.6}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:9px 14px;cursor:pointer;font-weight:500;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.btn:hover{background:var(--surface-2)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover{filter:brightness(1.06)}
+.btn.ghost{border-color:transparent;background:transparent;color:var(--accent);padding-inline:6px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btns{display:flex;gap:8px;flex-wrap:wrap}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:500;padding:3px 10px;border-radius:999px;background:var(--surface-2);color:var(--fg-2)}
+.pill.ok{background:var(--accent-soft);color:var(--accent)}
+.pill.warn{background:var(--warm-soft);color:var(--warm)}
+.dot{width:8px;height:8px;border-radius:50%;background:currentColor}
+.ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;color:var(--fg-2)}
+.ol b{color:var(--fg)}
+.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;background:var(--surface-2);padding:2px 6px;border-radius:6px;word-break:break-all}
+
+/* 칩(식단 선택) */
+.cat{border-top:1px solid var(--line);padding-top:14px;display:flex;flex-direction:column;gap:10px}
+.cat:first-of-type{border-top:0;padding-top:0}
+.cat-h{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.cat-h h3{font-size:15px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 12px;cursor:pointer;font-size:14px}
+.chip[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-weight:500}
+.chip.custom{border-style:dashed}
+.add{display:flex;gap:6px;max-width:320px}
+.add input{padding:5px 10px;border-radius:999px}
+.qgroup{display:flex;flex-direction:column;gap:2px}
+.qgroup .gname{font-size:12px;color:var(--muted);letter-spacing:.04em;margin:8px 0 2px}
+.qitem{display:flex;gap:10px;align-items:flex-start;padding:6px 4px;border-radius:8px;cursor:pointer}
+.qitem:hover{background:var(--surface-2)}
+.qitem input{margin-top:5px;accent-color:var(--accent)}
+.qitem .t{flex:1}
+.qitem .k{font-size:11px;color:var(--muted);flex:none;margin-top:3px}
+.counter{font-size:13px;color:var(--fg-2)}
+
+/* 구글 드라이브 연결 안내 */
+.explain{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:20px;align-items:center}
+@media (max-width:760px){.explain{grid-template-columns:minmax(0,1fr)}}
+.explain p{margin:0}
+.flow{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.flow .node{border:1px solid var(--line);border-radius:10px;padding:8px 12px;background:var(--surface);font-size:13px;line-height:1.4;text-align:center}
+.flow .node b{display:block;font-size:14px}
+.flow .node.key{border-color:var(--accent);background:var(--accent-soft)}
+.flow .arr{color:var(--muted);font-size:18px}
+.gstep{display:grid;grid-template-columns:34px minmax(0,1fr);gap:14px;padding-top:18px;border-top:1px solid var(--line)}
+.gstep:first-of-type{border-top:0;padding-top:4px}
+.gnum{width:30px;height:30px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font-weight:700;font-size:14px}
+.gbody{display:flex;flex-direction:column;gap:8px;min-width:0}
+.gbody h3{font-size:16px}
+.gbody p{margin:0;color:var(--fg-2)}
+.gbody p b{color:var(--fg)}
+.why{font-size:13px;background:var(--surface-2);border-radius:8px;padding:8px 12px;color:var(--fg-2)}
+/* 구글 화면 흉내 (항상 밝은 화면) */
+.mock{border:1px solid #c7c9cc;border-radius:8px;background:#ffffff;color:#202124;font-family:Arial,"Malgun Gothic","Apple SD Gothic Neo",sans-serif;font-size:13px;overflow:hidden;max-width:540px;line-height:1.5;word-break:keep-all}
+.mock .bar{background:#f1f3f4;border-bottom:1px solid #dadce0;padding:6px 10px;display:flex;gap:12px;flex-wrap:wrap;align-items:center;color:#3c4043}
+.mock .in{padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.mock .menu{border:1px solid #dadce0;border-radius:6px;box-shadow:0 2px 6px rgba(0,0,0,.15);width:200px;padding:4px 0;background:#ffffff}
+.mock .menu div{padding:5px 14px;color:#3c4043}
+.mock .gb{display:inline-block;background:#1a73e8;color:#ffffff;border-radius:4px;padding:5px 14px;font-weight:600}
+.mock .gb.line{background:#ffffff;color:#1a73e8;border:1px solid #dadce0}
+.mock .f{border:1px solid #dadce0;border-radius:4px;padding:5px 9px;color:#202124;background:#ffffff}
+.mock .k{font-size:12px;color:#5f6368}
+.mock .url{font-family:Consolas,Menlo,monospace;font-size:12px;word-break:break-all}
+.mock .dim{opacity:.45}
+.mock .warn{color:#d93025;font-weight:600;font-size:15px}
+.mock a{color:#1a73e8;text-decoration:underline}
+.hl{box-shadow:0 0 0 3px #f29900;border-radius:4px}
+.tag{display:inline-block;background:#f29900;color:#ffffff;font-size:11px;font-weight:700;border-radius:4px;padding:1px 6px;margin-left:6px;vertical-align:middle}
+.tag.no{background:#9aa0a6}
+/* 배포 */
+.share{display:grid;grid-template-columns:180px minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:620px){.share{grid-template-columns:minmax(0,1fr)}}
+.qr{background:#fff;padding:10px;border-radius:10px;border:1px solid var(--line);width:180px;height:180px;display:grid;place-items:center}
+.qr img,.qr canvas{width:160px!important;height:160px!important}
+.linkbox{display:flex;gap:6px}
+.qrcol{display:flex;flex-direction:column;gap:8px;align-items:stretch;width:180px}
+.qrcol .btn{justify-content:center;font-size:13px;padding:7px 10px}
+@media (max-width:620px){.qrcol{width:100%;align-items:flex-start}}
+.linkbox input{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px}
+.doc{white-space:pre-wrap;font-size:14px;line-height:1.8;background:var(--surface-2);border-radius:8px;padding:14px 16px;margin:0;font-family:var(--font-body)}
+
+/* 결과 */
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+@media (max-width:720px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.kpi .k{font-size:12px;color:var(--fg-2)}
+.kpi .v{font-size:26px;font-weight:700;line-height:1.2}
+.kpi .v small{font-size:13px;color:var(--muted);font-weight:500;margin-left:2px}
+.meter{height:6px;background:var(--surface-2);border-radius:3px;margin-top:8px;overflow:hidden}
+.meter i{display:block;height:100%;background:var(--accent);border-radius:3px}
+.classgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:6px}
+.cls{border-radius:8px;padding:6px 8px;background:var(--surface-2);font-size:12px;display:flex;flex-direction:column}
+.cls b{font-size:15px}
+.cls.low{background:var(--warm-soft)}
+.cls.low b{color:var(--warm)}
+
+.menu-cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px 28px}
+@media (max-width:760px){.menu-cols{grid-template-columns:minmax(0,1fr)}}
+.mcat h3{font-size:14px;margin-bottom:6px;display:flex;justify-content:space-between;color:var(--fg-2)}
+.hbar{display:grid;grid-template-columns:minmax(84px,7.5em) minmax(0,1fr) 7.2em;align-items:center;gap:10px;padding:3px 0;font-size:14px}
+.hbar .name{overflow-wrap:anywhere;line-height:1.3}
+.hbar .track{height:14px;background:var(--surface-2);border-radius:0 4px 4px 0;position:relative}
+.hbar .fill{position:absolute;inset:0 auto 0 0;background:var(--bar);border-radius:0 4px 4px 0;min-width:2px}
+.hbar.top .name{font-weight:700}
+.hbar .val{text-align:right;color:var(--fg-2);font-size:13px}
+.hbar .val b{color:var(--fg);font-weight:700}
+
+.q{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:16px;border-top:1px solid var(--line);padding-top:16px}
+.q:first-of-type{border-top:0;padding-top:0}
+@media (max-width:760px){.q{grid-template-columns:minmax(0,1fr)}}
+.q .qt{font-weight:500}
+.stack{display:flex;height:22px;border-radius:4px;overflow:hidden;gap:2px;margin:8px 0 6px;background:var(--surface)}
+.stack i{display:block;height:100%}
+.stack i:hover{filter:brightness(1.1)}
+.lgd{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;color:var(--fg-2)}
+.lgd span{display:inline-flex;align-items:center;gap:5px}
+.lgd i{width:10px;height:10px;border-radius:2px;display:inline-block}
+.qnums{display:flex;gap:14px;font-size:13px;color:var(--fg-2);flex-wrap:wrap}
+.qnums b{color:var(--fg)}
+.note{display:flex;flex-direction:column;gap:4px}
+.note textarea{min-height:92px;font-size:14px}
+.note .lbl{display:flex;justify-content:space-between;align-items:center}
+.words{display:flex;flex-wrap:wrap;gap:6px}
+.word{background:var(--surface-2);border-radius:999px;padding:4px 12px;font-size:14px}
+.word b{color:var(--accent);margin-left:4px}
+
+/* 결과보고서 미리보기 */
+.report{background:#fff;color:#1a1a1a;border-radius:6px;padding:28px 26px;border:1px solid var(--line);overflow-x:auto}
+.report h2{text-align:center;font-size:19px;margin-bottom:12px;color:#1a1a1a}
+.report .meta{font-size:13px;margin:0 0 12px;line-height:1.8}
+.report table{border-collapse:collapse;width:100%;min-width:560px;font-size:13px}
+.report th{background:#e9f2ec;border:1px solid #9aa79f;padding:6px;font-weight:700}
+.report td{border:1px solid #9aa79f;padding:10px;vertical-align:top}
+.report td.ana{background:#f4f9ee;width:36%}
+.report .rbar{display:grid;grid-template-columns:8em 1fr 3.4em;gap:6px;align-items:center;font-size:12px;padding:1px 0}
+.report .rbar .tr{height:10px;background:#eef0ec}
+.report .rbar .tr i{display:block;height:100%;background:#3c8a64}
+.report .stack{background:#fff;height:16px}
+
+/* 학생 화면 */
+.phone-wrap{display:flex;justify-content:center;padding:24px 16px 64px}
+.phone{width:100%;max-width:440px;background:var(--surface);border:1px solid var(--line);border-radius:22px;overflow:hidden;display:flex;flex-direction:column;min-height:640px}
+.s-top{padding:14px 18px 10px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:8px}
+.s-school{font-size:12px;color:var(--fg-2);display:flex;justify-content:space-between}
+.prog{height:6px;background:var(--surface-2);border-radius:3px;overflow:hidden}
+.prog i{display:block;height:100%;background:var(--accent);transition:width .25s}
+.s-body{padding:22px 18px;flex:1;display:flex;flex-direction:column;gap:16px}
+.s-kicker{font-size:13px;color:var(--accent);font-weight:700}
+.s-title{font-family:var(--font-display);font-size:24px;font-weight:400;line-height:1.35}
+.s-text{white-space:pre-wrap;color:var(--fg-2);margin:0}
+.s-hint{font-size:13px;color:var(--muted);margin:0}
+.picks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.pick{border:1.5px solid var(--line);background:var(--surface);border-radius:12px;padding:12px;cursor:pointer;text-align:left;font-size:15px;display:flex;align-items:center;gap:8px;min-height:52px}
+.pick .box{width:20px;height:20px;border-radius:6px;border:1.5px solid var(--line);flex:none;display:grid;place-items:center;font-size:13px;color:transparent}
+.pick[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.pick[aria-pressed="true"] .box{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.scale{display:flex;flex-direction:column;gap:8px}
+.scale button{border:1.5px solid var(--line);background:var(--surface);border-radius:12px;padding:13px 14px;font-size:16px;cursor:pointer;display:flex;align-items:center;gap:12px;text-align:left}
+.scale button .e{font-size:22px;width:28px;text-align:center}
+.scale button[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft);font-weight:700}
+.sel2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.sel2 select{font-size:17px;padding:12px}
+.s-foot{display:flex;gap:8px;padding:14px 18px;border-top:1px solid var(--line)}
+.s-foot .btn{flex:1;justify-content:center;padding:13px;font-size:16px;border-radius:12px}
+.s-foot .btn.back{flex:0 0 auto}
+.done{align-items:center;text-align:center;justify-content:center}
+.done .big{font-size:56px;line-height:1}
+.err{color:var(--warm);font-size:14px;margin:0}
+
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:10px;font-size:14px;z-index:20;max-width:calc(100% - 32px)}
+.tip{position:fixed;pointer-events:none;background:var(--fg);color:var(--bg);font-size:12px;padding:5px 8px;border-radius:6px;z-index:30;white-space:nowrap}
+.empty{color:var(--muted);text-align:center;padding:24px 0}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<div id="app"></div>
+<div id="tip" class="tip" hidden></div>
+<div id="toast" class="toast" hidden></div>
+
+<script>
+/* =========================================================
+   기본 데이터 (연구회 회의자료 9.29 기준)
+   ========================================================= */
+const CATALOG = [
+  {key:'rice', name:'밥·일품요리', items:['볶음밥','비빔밥','자장밥','카레밥','마파두부덮밥','김치덮밥','치킨마요덮밥','오징어덮밥','곤드레밥']},
+  {key:'soup', name:'국·탕·찌개', items:['미역국','쇠고기국','갈비탕','콩나물국','달걀국','황태국','시금치된장국','아욱된장국','김치찌개','순두부찌개','돼지등뼈탕','햄모둠찌개','마라탕','오징어찌개','동태찌개','설렁탕','매운찌개류','맵지않은맑은국']},
+  {key:'side1', name:'반찬1', items:['돼지불고기','돼지갈비','오징어볶음','주꾸미볶음','쇠고기볶음','떡볶이','오징어채볶음','멸치볶음','닭갈비','닭찜','달걀볶음','두부조림','포크커틀릿','탕수육','치킨','생선튀김']},
+  {key:'side2', name:'반찬2', items:['콩나물무침','숙주나물무침','시금치무침','오이무침','도토리묵무침','청포묵무침','감자채볶음']},
+  {key:'noodle', name:'면류', items:['우동','칼국수','잔치국수','쌀국수','토마토스파게티','로제스파게티','크림스파게티','쫄면','막국수']},
+  {key:'kimchi', name:'김치류', items:['배추김치','깍두기','총각김치','열무김치','오이김치','파김치','갓김치']},
+  {key:'dessert', name:'후식', items:['빵류','떡류','과일류','과일주스류','요구르트류','우유','아이스크림','쿠키류']}
+];
+const QBANK = [
+  {group:'급식 전반 만족도', items:[
+    ['g1','나는 우리 학교 급식을 좋아하고 만족한다.'],
+    ['g2','급식 시간이 기다려진다.'],
+    ['g3','급식은 나의 건강한 식생활에 도움이 된다.'],
+    ['g4','급식에 사용되는 식재료가 신선하다고 생각한다.'],
+    ['g5','우리 학교 급식은 대체적으로 맛있다.']]},
+  {group:'식단 구성', items:[
+    ['m1','수산물, 채소류 등 건강에 좋은 반찬들도 다양하게 제공된다.'],
+    ['m2','새로운 식품이나 음식을 경험할 수 있다.']]},
+  {group:'위생 및 환경', items:[
+    ['h1','조리 및 배식 과정이 위생적이라고 생각한다.'],
+    ['h2','급식실 내부의 분위기는 편안하고 식사하기에 쾌적하다.'],
+    ['h3','급식실에서 친구들과 즐겁게 먹을 수 있다.'],
+    ['h4','식사 전에 비누로 손을 깨끗이 씻는다.']]},
+  {group:'학생 의견 반영 및 식생활 인식', items:[
+    ['p1','급식실 선생님들이 친절하다.'],
+    ['p2','급식 식단표나 영양 정보를 확인하는 편이다.'],
+    ['p3','나는 급식을 남기지 않으려고 노력한다.'],
+    ['p4','학교급식을 통해 골고루 먹는 습관이나 바른 식생활을 배우게 된다.']]},
+  {group:'서술형', text:true, items:[
+    ['t1','급식에서 먹고 싶은 메뉴를 2개 정도 적어주세요.'],
+    ['t2','가장 만족스러웠던 급식 메뉴나 기억에 남는 특색 식단은 무엇인가요?']]}
+];
+const DEFAULT_Q = ['g1','g2','g3','g4','g5','m1','h1','h2','p1','p3','t1'];
+const LIKERT = [
+  {v:5, t:'매우 그렇다', e:'😄', c:'--l5'},
+  {v:4, t:'그렇다', e:'🙂', c:'--l4'},
+  {v:3, t:'보통이다', e:'😐', c:'--l3'},
+  {v:2, t:'그렇지 않다', e:'🙁', c:'--l2'},
+  {v:1, t:'전혀 그렇지 않다', e:'😣', c:'--l1'}
+];
+const INTRO = '안녕하세요! 😊\n여러분의 의견을 반영하여 더 맛있고 만족스러운 학교급식을 만들기 위해 설문을 진행합니다.\n\n여러분이 작성한 내용은 학교급식 개선을 위한 통계 분석 목적으로만 활용되며, 이름 등 개인정보는 입력하지 않습니다.\n\n설문에는 약 3~5분 정도가 소요됩니다.\n여러분의 소중한 의견이 더 나은 학교급식을 만드는 데 큰 도움이 됩니다.\n설문에 참여해 주셔서 감사합니다! 💚';
+const LEVEL_GRADES = {'초':[4,5,6], '중':[1,2,3], '고':[1,2,3]};
+
+/* =========================================================
+   저장 (선생님 브라우저에만)
+   ========================================================= */
+const KEY = 'meal-survey-v1';
+const store = {
+  get(k){ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ return null; } },
+  set(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+};
+let S = null; // 시작할 때 불러옴
+function save(){ store.set(KEY, S); }
+
+function uid(n=8){ const a='abcdefghjkmnpqrstuvwxyz23456789'; let s=''; for(let i=0;i<n;i++) s+=a[Math.floor(Math.random()*a.length)]; return s; }
+function today(off=0){ const d=new Date(Date.now()+off*864e5); return d.toISOString().slice(0,10); }
+function qById(id, survey){
+  const custom = (survey && survey.customQ || []).find(q=>q.id===id);
+  if (custom) return custom;
+  for (const g of QBANK) for (const [qid,t] of g.items) if (qid===id) return {id:qid, text:t, type:g.text?'text':'scale', group:g.group};
+  return null;
+}
+
+function newSurvey(){
+  const menus = {};
+  CATALOG.forEach(c => menus[c.key] = c.items.slice(0, Math.min(6, c.items.length)));
+  return {
+    id: uid(), school:'', level:'고', grades:[1,2,3], classes:10, students:900,
+    title:'', start: today(), end: today(6), intro: INTRO,
+    menus, customMenus:{}, qids: DEFAULT_Q.slice(), customQ: [],
+    createdAt: new Date().toISOString(), example:false
+  };
+}
+function seed(){
+  const s = newSurvey();
+  Object.assign(s, {id:'example', school:'○○고등학교', title:'2026학년도 2학기 학교급식 설문조사', example:true, start:today(-5), end:today(1)});
+  s.menus = {
+    rice:['볶음밥','비빔밥','카레밥','마파두부덮밥','치킨마요덮밥','곤드레밥'],
+    soup:['미역국','갈비탕','콩나물국','김치찌개','순두부찌개','마라탕','설렁탕'],
+    side1:['돼지불고기','떡볶이','닭갈비','두부조림','포크커틀릿','탕수육','치킨','생선튀김'],
+    side2:['콩나물무침','숙주나물무침','시금치무침','도토리묵무침','감자채볶음'],
+    noodle:['잔치국수','쌀국수','로제스파게티','크림스파게티','쫄면'],
+    kimchi:['배추김치','깍두기','총각김치','열무김치','갓김치'],
+    dessert:['떡류','과일류','요구르트류','아이스크림','쿠키류']
+  };
+  const st = {mailbox:'', key:'', surveys:[s], responses:{}, notes:{}, view:{tab:'results', sid:'example'}};
+  st.responses.example = fakeResponses(s, 342);
+  return st;
+}
+
+/* 예시 응답 만들기 (시안 확인용) */
+const POP = {'치킨':.86,'탕수육':.78,'떡볶이':.74,'돼지갈비':.7,'마라탕':.72,'로제스파게티':.69,'크림스파게티':.62,'치킨마요덮밥':.66,'카레밥':.52,'볶음밥':.55,'포크커틀릿':.58,'돼지불고기':.6,'닭갈비':.64,'아이스크림':.83,'쿠키류':.61,'과일류':.57,'떡류':.31,'요구르트류':.42,
+  '시금치무침':.14,'도토리묵무침':.12,'숙주나물무침':.19,'콩나물무침':.24,'감자채볶음':.37,'두부조림':.22,'생선튀김':.29,'곤드레밥':.16,'마파두부덮밥':.33,'비빔밥':.44,
+  '미역국':.46,'갈비탕':.58,'콩나물국':.21,'김치찌개':.55,'순두부찌개':.43,'설렁탕':.41,'잔치국수':.35,'쌀국수':.47,'쫄면':.51,'배추김치':.48,'깍두기':.44,'총각김치':.27,'열무김치':.18,'갓김치':.09};
+const WANT = ['마라탕','마라탕','마라탕','치킨','치킨','치킨','떡볶이','떡볶이','탕수육','로제떡볶이','로제떡볶이','로제 떡볶이','돈가스','돈까스','햄버거','햄버거','피자','라면','짜장면','스테이크','초밥','쌀국수','양념치킨','크림파스타','닭강정','닭강정','훠궈','탕후루','마카롱','소떡소떡'];
+const BEST = ['마라탕','치킨마요덮밥','수제버거','로제떡볶이','닭갈비','크리스마스 특식','삼계탕','카레','스파게티','탕수육','추석 송편','짜장면'];
+function fakeResponses(s, n){
+  const rows=[]; const t0=new Date(s.start).getTime();
+  const bias={g1:3.8,g2:3.5,g3:3.9,g4:3.7,g5:3.6,m1:3.4,m2:3.3,h1:4.1,h2:3.2,h3:4.2,h4:3.0,p1:4.3,p2:2.7,p3:3.5,p4:3.6};
+  for(let i=0;i<n;i++){
+    const grade = s.grades[Math.floor(Math.random()*s.grades.length)];
+    const cls = 1+Math.floor(Math.random()*s.classes);
+    const likes=[];
+    CATALOG.forEach(c=> (s.menus[c.key]||[]).concat(s.customMenus[c.key]||[]).forEach(m=>{ if(Math.random() < (POP[m]??.4)) likes.push(m); }));
+    const answers={};
+    s.qids.forEach(id=>{
+      const q=qById(id,s); if(!q) return;
+      if(q.type==='scale'){ const b=bias[id]??3.5; let v=Math.round(b + (Math.random()+Math.random()+Math.random()-1.5)*1.3); answers[id]=Math.max(1,Math.min(5,v)); }
+      else if(Math.random()<.7){ answers[id] = id==='t2' ? BEST[Math.floor(Math.random()*BEST.length)] : [WANT[Math.floor(Math.random()*WANT.length)], WANT[Math.floor(Math.random()*WANT.length)]].join(', '); }
+    });
+    rows.push({at:new Date(t0 + Math.random()*5*864e5).toISOString(), grade, cls, likes, answers});
+  }
+  return rows;
+}
+
+/* =========================================================
+   우리 학교 데이터 구글 드라이브(앱스 스크립트) 연결
+   ========================================================= */
+const MAILBOX_RE = /^https:\/\/script\.google\.com\/macros\/s\/([A-Za-z0-9_-]{20,})\/exec\/?$/;
+function mailboxId(url){ const m=(url||'').trim().match(MAILBOX_RE); return m?m[1]:''; }
+function mailboxUrl(id){ return `https://script.google.com/macros/s/${id}/exec`; }
+async function mbGet(base, params){
+  const u = base + '?' + new URLSearchParams(params).toString();
+  const r = await fetch(u, {redirect:'follow'});
+  const j = await r.json();
+  if(!j.ok) throw new Error(j.error||'요청이 처리되지 않았습니다.');
+  return j;
+}
+async function mbPost(base, body, tries=3){
+  let last;
+  for(let i=0;i<tries;i++){
+    try{
+      const r = await fetch(base, {method:'POST', body:JSON.stringify(body), redirect:'follow'});
+      const j = await r.json();
+      if(!j.ok) throw Object.assign(new Error(j.error||'저장하지 못했습니다.'), {final:true});
+      return j;
+    }catch(e){ last=e; if(e.final) throw e; await new Promise(res=>setTimeout(res, 800*(i+1) + Math.random()*700)); }
+  }
+  throw last;
+}
+const NET_HELP = '주소가 /exec로 끝나는지, 배포할 때 액세스 권한을 "모든 사용자"로 골랐는지 확인해 주세요. 이 미리보기 화면에서는 외부 연결이 막혀 있어서, GitHub Pages에 올린 뒤 실제 연결을 확인할 수 있습니다.';
+
+/* =========================================================
+   공통 도우미
+   ========================================================= */
+const $ = s => document.querySelector(s);
+const esc = s => String(s??'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pct = (a,b) => b ? Math.round(a/b*1000)/10 : 0;
+function toast(msg){ const t=$('#toast'); t.textContent=msg; t.hidden=false; clearTimeout(toast._t); toast._t=setTimeout(()=>t.hidden=true, 2600); }
+async function copy(text, label='복사했습니다'){
+  try{ await navigator.clipboard.writeText(text); toast(label); }
+  catch(e){
+    const ta=document.createElement('textarea'); ta.value=text; document.body.appendChild(ta); ta.select();
+    let ok=false; try{ ok=document.execCommand('copy'); }catch(_){}
+    ta.remove(); toast(ok?label:'복사가 막혀 있어요. 글을 직접 드래그해서 복사해 주세요.');
+  }
+}
+let _dl; // 미리보기(claude.ai) 화면의 파일 저장 기능
+function dlCap(){ if(_dl!==undefined) return Promise.resolve(_dl); if(!(window.claude && window.claude.use)) return Promise.resolve(_dl=null);
+  return window.claude.use('downloads').then(d=>(_dl=d||null)).catch(()=>(_dl=null)); }
+async function saveFile(name, data, mime){
+  const dl = await dlCap();
+  if(dl){
+    try{ await dl.save({filename:name, data}); toast(name+'을(를) 저장했습니다'); }
+    catch(e){
+      const ext=name.split('.').pop();
+      toast(e&&e.code==='rejected_extension' ? `이 미리보기 화면에서는 .${ext} 파일을 저장할 수 없습니다. GitHub Pages에 올린 앱에서는 내려받을 수 있습니다.`
+          : e&&e.code==='declined' ? '저장을 취소했습니다' : '저장하지 못했습니다. 잠시 뒤 다시 눌러 주세요.');
+    }
+    return;
+  }
+  const blob = data instanceof Blob ? data : new Blob([data], {type:mime||'text/plain;charset=utf-8'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 4000);
+  toast(name + ' 내려받기를 시작했습니다');
+}
+function safeName(t){ return String(t||'').replace(/[\\/:*?"<>|]/g,'').trim() || '학교급식설문'; }
+function fmtDate(d){ if(!d) return ''; const [y,m,dd]=d.split('-'); return `${y}. ${+m}. ${+dd}.`; }
+function survey(id){ return S.surveys.find(s=>s.id===id); }
+function allMenus(s){ return CATALOG.map(c=>({...c, list:(s.menus[c.key]||[]).concat(s.customMenus[c.key]||[])})).filter(c=>c.list.length); }
+function surveyQs(s){ // 서술형은 추가 문항이 있어도 항상 맨 마지막
+  const qs=s.qids.map(id=>qById(id,s)).filter(Boolean);
+  return qs.filter(q=>q.type!=='text').concat(qs.filter(q=>q.type==='text'));
+}
+function gradeText(s){ const g=s.grades.slice().sort((a,b)=>a-b); const lv={초:'초등학교',중:'중학교',고:'고등학교'}[s.level]; return g.length ? `${g[0]}${g.length>1?'~'+g[g.length-1]:''}학년 학생` : '학생'; }
+
+/* 툴팁 */
+document.addEventListener('mousemove', e=>{
+  const el = e.target.closest('[data-tip]'); const tip=$('#tip');
+  if(!el){ tip.hidden=true; return; }
+  tip.textContent = el.dataset.tip; tip.hidden=false;
+  const x = Math.min(e.clientX+12, innerWidth - tip.offsetWidth - 8);
+  tip.style.left = x+'px'; tip.style.top = (e.clientY+14)+'px';
+});
+
+/* =========================================================
+   통계
+   ========================================================= */
+function analyze(s, rows){
+  const N = rows.length;
+  const menu = allMenus(s).map(c=>{
+    const items = c.list.map(m=>{ const n=rows.filter(r=>r.likes.includes(m)).length; return {name:m, n, p:pct(n,N)}; }).sort((a,b)=>b.n-a.n);
+    return {name:c.name, items};
+  });
+  const qs = surveyQs(s).map(q=>{
+    if(q.type==='scale'){
+      const dist={1:0,2:0,3:0,4:0,5:0}; let cnt=0, sum=0;
+      rows.forEach(r=>{ const v=r.answers[q.id]; if(v>=1&&v<=5){ dist[v]++; cnt++; sum+=v; } });
+      return {...q, dist, cnt, mean: cnt? Math.round(sum/cnt*100)/100 : 0, pos:pct(dist[4]+dist[5],cnt), mid:pct(dist[3],cnt), neg:pct(dist[1]+dist[2],cnt)};
+    }
+    const freq={}; let cnt=0;
+    rows.forEach(r=>{ const t=(r.answers[q.id]||'').trim(); if(!t) return; cnt++;
+      t.split(/[,，、\/\n·]|\s그리고\s|\s및\s/).map(w=>w.replace(/\s+/g,'').replace(/까스$/,'가스')).filter(w=>w && w.length<=20).forEach(w=>freq[w]=(freq[w]||0)+1); });
+    return {...q, cnt, words:Object.entries(freq).sort((a,b)=>b[1]-a[1])};
+  });
+  const byClass={}; rows.forEach(r=>{ const k=r.grade+'-'+r.cls; byClass[k]=(byClass[k]||0)+1; });
+  return {N, menu, qs, byClass};
+}
+function autoNote(q){
+  if(q.type!=='scale'){
+    if(!q.words.length) return '응답이 없습니다.';
+    const top=q.words.slice(0,5).map(([w,n])=>`${w}(${n}명)`).join(', ');
+    return `${top} 순으로 많이 응답하였습니다. 선호 메뉴는 식단 작성 시 반영하고, 특색 식단으로 제공하는 방안을 검토하겠습니다.`;
+  }
+  const p=q.pos, n=q.neg, m=q.mid;
+  if(p>=80) return `‘그렇다’ 이상 긍정 응답이 ${p}%로 매우 높게 나타났습니다. 현재 운영 방식을 유지하겠습니다.`;
+  if(p>=60) return `긍정 응답이 ${p}%로 대체로 만족하는 것으로 나타났습니다. 부정 응답(${n}%)의 원인을 살펴 보완하겠습니다.`;
+  if(p>=40) return `긍정 응답 ${p}%, 보통 ${m}%로 의견이 나뉘었습니다. 관련 요소를 점검하여 개선 방안을 마련하겠습니다.`;
+  return `긍정 응답이 ${p}%에 그쳐 개선이 필요한 것으로 나타났습니다. 원인을 파악하여 개선 계획을 수립하겠습니다.`;
+}
+function menuNote(a){
+  const all = a.menu.flatMap(c=>c.items).sort((x,y)=>y.p-x.p);
+  if(!all.length) return '';
+  const top = all.slice(0,5).map(i=>`${i.name}(${i.p}%)`).join(', ');
+  const low = all.slice(-3).reverse().map(i=>`${i.name}(${i.p}%)`).join(', ');
+  return `선호도가 높은 식단은 ${top} 순이었습니다. 선호도가 낮은 ${low}은(는) 조리법 개선이나 제공 주기 조정을 검토하겠습니다.`;
+}
+function getNote(sid, key, fallback){ return (S.notes[sid]||{})[key] ?? fallback; }
+
+/* =========================================================
+   선생님 화면
+   ========================================================= */
+const TABS = [
+  {id:'connect', n:1, name:'구글 드라이브 연결', when:'처음 한 번'},
+  {id:'create',  n:2, name:'설문 만들기', when:'설문할 때마다'},
+  {id:'share',   n:3, name:'배포하기'},
+  {id:'results', n:4, name:'결과 보기', when:'설문이 끝난 뒤'}
+];
+let draft = null;          // 만들고 있는 설문
+let mode = 'teacher';      // teacher | student
+let studentSid = null;     // 미리보기 중인 설문
+let showReport = false;
+
+function render(){
+  const app = $('#app');
+  const top = `
+    <header class="top">
+      <div class="brand">학교급식 설문조사 <small>영양교사 앱개발 연구회 · 시범 운영</small></div>
+      <div class="seg" role="group" aria-label="화면 선택">
+        <button id="m-teacher" aria-pressed="${mode==='teacher'}">선생님 화면</button>
+        <button id="m-student" aria-pressed="${mode==='student'}">학생 화면</button>
+      </div>
+    </header>
+    ${!S.mailbox ? `<div class="notice">체험 모드: 우리 학교 데이터 구글 드라이브가 연결되지 않아 설문과 응답이 이 브라우저에만 저장됩니다. ‘○○고등학교’는 예시 데이터입니다.</div>`:''}`;
+  if(mode==='student'){ app.innerHTML = top + studentShell(); bindTop(); renderStudent(); return; }
+  const tab = S.view.tab;
+  app.innerHTML = top + `
+    <div class="shell">
+      <nav class="steps" aria-label="단계">
+        ${TABS.map(t=>`${t.when?`<div class="when">${t.when}</div>`:''}<button data-tab="${t.id}" ${t.id===tab?'aria-current="page"':''}><span class="n">${t.n}</span>${t.name}</button>`).join('')}
+      </nav>
+      <main class="main" id="main">${ {connect:viewConnect, create:viewCreate, share:viewShare, results:viewResults}[tab]() }</main>
+    </div>`;
+  bindTop();
+  document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{ S.view.tab=b.dataset.tab; save(); showReport=false; render(); scrollTo(0,0); });
+  ({connect:bindConnect, create:bindCreate, share:bindShare, results:bindResults})[tab]();
+}
+function bindTop(){
+  $('#m-teacher').onclick=()=>{ mode='teacher'; render(); };
+  $('#m-student').onclick=()=>{ mode='student'; studentSid = studentSid || S.view.sid || S.surveys[0]?.id; resetStudent(); render(); };
+}
+
+/* ---- 1. 구글 드라이브 연결 ---- */
+const TEMPLATE_URL = 'https://docs.google.com/spreadsheets/d/1vIbGRFCm8jWquU7LtayHDxGRUlCVAyUO-gVkilly-UQ/copy'; // 연구회가 템플릿 시트를 만들면 '.../copy' 링크를 여기에 넣습니다
+function viewConnect(){
+  const ok = !!S.mailbox;
+  return `
+  <div class="head"><h1>우리 학교 데이터 구글 드라이브 연결</h1>
+    <p>처음 한 번만 하면 됩니다. 아래 <b>연결 주소 만드는 방법</b>을 따라 주소를 만든 뒤, 이 칸에 붙여넣고 연결하기를 누르세요. 10분 정도 걸립니다.</p></div>
+  <section class="panel">
+    <div class="row" style="justify-content:space-between;align-items:center">
+      <h2>연결 상태</h2>
+      ${ok?'<span class="pill ok"><span class="dot"></span>연결됨</span>':'<span class="pill warn"><span class="dot"></span>연결 전 · 체험 모드</span>'}
+    </div>
+    <div class="field">
+      <label for="mb-url">우리 학교 데이터 구글 드라이브 연결 주소</label>
+      <input id="mb-url" type="url" placeholder="https://script.google.com/macros/s/……/exec" value="${esc(S.mailbox)}">
+      <span class="sub">아직 주소가 없다면 아래 7단계를 먼저 해 주세요.</span>
+    </div>
+    <div class="field" style="max-width:320px">
+      <label for="mb-key">관리코드 <span class="sub">(처음에는 비워 두세요)</span></label>
+      <input id="mb-key" type="text" placeholder="다른 PC라면 시트 [설정] 탭의 코드" value="${esc(S.key)}">
+    </div>
+    <div class="btns">
+      <button class="btn primary" id="mb-connect">연결하기</button>
+      ${ok?'<button class="btn" id="mb-off">연결 해제하고 체험 모드로</button>':''}
+    </div>
+    <p class="err" id="mb-err" hidden></p>
+  </section>
+
+  <section class="panel">
+    <h2>우리 학교 데이터 구글 드라이브가 뭔가요?</h2>
+    <div class="explain">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <p>학생 응답이 저장되는 곳입니다. 선생님 구글 드라이브에 <b>우리 학교 전용 구글 시트</b>를 하나 두면, 학생이 제출한 응답이 그 시트에 한 줄씩 쌓입니다.</p>
+        <p><b>연결 주소</b>는 설문 앱이 학생 응답을 이 시트로 보낼 때 쓰는 주소입니다. 시트 안에 들어 있는 작은 프로그램을 ‘배포’하면 만들어집니다.</p>
+        <p class="sub">연구회나 교육청 서버에는 응답이 저장되지 않습니다. 학생은 응답을 넣을 수만 있고 시트를 볼 수는 없습니다.</p>
+      </div>
+      <div class="flow" aria-label="학생 휴대폰에서 연결 주소를 거쳐 선생님 구글 드라이브 시트로">
+        <div class="node"><b>학생 휴대폰</b>QR로 응답</div><span class="arr">→</span>
+        <div class="node key"><b>연결 주소</b>…/exec</div><span class="arr">→</span>
+        <div class="node"><b>내 구글 드라이브</b>시트에 응답이 쌓임</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>연결 주소 만드는 방법</h2>
+    <p class="sub">PC의 크롬에서, 설문에 쓸 구글 계정(개인 Gmail 권장)으로 로그인한 상태에서 따라 해 주세요. 주황색 테두리가 누를 곳입니다.</p>
+
+    <div class="gstep"><span class="gnum">1</span><div class="gbody">
+      <h3>연구회가 만든 응답 시트를 내 구글 드라이브에 한 부 복사합니다</h3>
+      <p>연구회가 응답을 받을 수 있게 미리 만들어 둔 <b>구글 시트 원본</b>이 있습니다. 이 원본을 선생님 드라이브로 한 부 복사해 오는 단계입니다.</p>
+      <p>아래 버튼(또는 연구회가 보낸 링크)을 누르면 구글 화면이 열리고 “문서를 복사하시겠습니까?”라고 묻습니다. 파란색 <b>사본 만들기</b>를 누르면 내 드라이브에 시트가 하나 생기고 바로 열립니다.</p>
+      <div class="btns">${TEMPLATE_URL?`<a class="btn primary" href="${esc(TEMPLATE_URL)}" target="_blank" rel="noopener">연구회 응답 시트 사본 만들기</a>`:`<button class="btn" disabled>연구회 응답 시트 사본 만들기 (링크 준비 중)</button>`}</div>
+      <div class="mock"><div class="in"><b style="font-size:18px;font-weight:400">문서 복사</b><span style="background:#fbbc04;padding:6px 10px;border-radius:2px;font-size:12px">⚠ 첨부된 Apps Script 파일 및 기능도 복사됩니다.</span><span><b>급식설문 데이터(연구회 원본)</b>을(를) 복사하시겠습니까?</span><div style="display:flex;gap:8px"><span class="gb hl">사본 만들기</span><span class="gb line" style="color:#3c4043">Apps Script 파일 보기</span></div></div></div>
+      <p>노란 안내(Apps Script도 복사됨)는 정상입니다. 그 프로그램이 학생 응답을 시트에 적어 주는 역할을 합니다. 복사된 시트 이름은 <b>‘2026 급식설문 데이터_○○학교’</b>처럼 바꿔 두면 찾기 쉽습니다.</p>
+      <p class="why">왜 복사하나요? 원본은 연구회 것이라 그대로 쓰면 모든 학교 응답이 한 시트에 섞입니다. 학교마다 자기 사본을 가지면 우리 학교 응답은 우리 학교 시트에만 쌓입니다. 공문 서식 파일을 받아 내 컴퓨터에 저장해 쓰는 것과 같습니다. 원본 안에 응답을 받는 프로그램이 이미 들어 있어서, 복사하면 프로그램도 함께 따라옵니다.</p>
+    </div></div>
+
+    <div class="gstep"><span class="gnum">2</span><div class="gbody">
+      <h3>시트에서 Apps Script를 엽니다</h3>
+      <p>복사된 시트 위쪽 메뉴에서 <b>확장 프로그램 → Apps Script</b>를 누르면 새 탭이 열립니다. 안에 있는 코드는 고치지 않습니다.</p>
+      <div class="mock"><div class="bar"><span>파일</span><span>수정</span><span>보기</span><span>삽입</span><span>서식</span><span>데이터</span><span>도구</span><span class="hl">확장 프로그램</span><span>도움말</span></div>
+        <div class="in"><div class="menu"><div>부가기능</div><div>매크로</div><div class="hl" style="margin:2px 6px">Apps Script</div></div></div></div>
+    </div></div>
+
+    <div class="gstep"><span class="gnum">3</span><div class="gbody">
+      <h3>배포 → 새 배포를 누릅니다</h3>
+      <p>Apps Script 화면 오른쪽 위 파란색 <b>배포</b> 버튼을 누르고 <b>새 배포</b>를 고릅니다.</p>
+      <div class="mock"><div class="bar" style="justify-content:space-between"><span><b>급식설문 데이터</b></span><span class="gb hl">배포 ▾</span></div>
+        <div class="in" style="align-items:flex-end"><div class="menu"><div class="hl" style="margin:2px 6px">새 배포</div><div>배포 관리</div><div>배포 테스트</div></div></div></div>
+      <p class="why">‘배포’는 이 프로그램에 인터넷 주소를 붙여 주는 일입니다. 이 주소가 곧 연결 주소가 됩니다.</p>
+    </div></div>
+
+    <div class="gstep"><span class="gnum">4</span><div class="gbody">
+      <h3>‘웹 앱’을 고르고 세 칸을 채운 뒤 배포를 누릅니다</h3>
+      <p>“유형 선택” 옆 톱니바퀴(⚙)를 눌러 <b>웹 앱</b>을 고르고, 아래처럼 채웁니다. 가장 중요한 것은 마지막 칸 <b>모든 사용자</b>입니다.</p>
+      <div class="mock"><div class="bar"><b>새 배포</b></div><div class="in">
+        <div>유형 선택 ⚙ <span class="hl" style="padding:1px 6px">웹 앱</span></div>
+        <span class="k">설명</span><span class="f">급식설문 데이터</span>
+        <span class="k">다음 사용자 인증 정보로 실행</span><span class="f">나 (myname@gmail.com)</span>
+        <span class="k">액세스 권한이 있는 사용자</span><span class="f hl">모든 사용자</span>
+        <div style="text-align:right"><span class="gb">배포</span></div></div></div>
+      <p class="why">‘나’로 실행해야 프로그램이 선생님 권한으로 시트에 응답을 적을 수 있고, ‘모든 사용자’여야 학생이 로그인 없이 응답을 보낼 수 있습니다. ‘Google 계정이 있는 모든 사용자’를 고르면 학생 제출이 안 됩니다. ‘모든 사용자’가 목록에 없다면 학교·교육청 계정이라 막혀 있는 것이니 개인 Gmail로 1단계부터 다시 해 주세요.</p>
+    </div></div>
+
+    <div class="gstep"><span class="gnum">5</span><div class="gbody">
+      <h3>권한을 승인합니다 (처음 한 번)</h3>
+      <p><b>액세스 승인</b> → 내 계정 선택 → “Google에서 확인하지 않은 앱” 화면이 나오면 왼쪽 아래 <b>고급</b> → <b>급식설문 데이터(으)로 이동</b> → <b>허용</b> 순서로 누릅니다.</p>
+      <div class="mock"><div class="in">
+        <span class="warn">Google에서 확인하지 않은 앱</span>
+        <span>이 앱은 Google의 인증을 받지 않았습니다. 개발자를 알고 신뢰하는 경우에만 계속하세요.</span>
+        <div style="display:flex;justify-content:space-between;align-items:center"><a class="hl" style="padding:0 4px">고급</a><span class="gb">안전한 페이지로 돌아가기</span></div>
+        <a class="hl" style="padding:0 4px;align-self:flex-start">급식설문 데이터(으)로 이동(안전하지 않음)</a></div></div>
+      <p class="why">경고가 나오는 이유는 연구회 프로그램을 구글 심사에 따로 등록하지 않았기 때문입니다. 이 프로그램이 받는 권한은 <b>이 시트 하나를 보고 고치는 권한</b>뿐이라서 다른 파일이나 메일에는 접근하지 않습니다. 권한 목록에 드라이브 전체나 Gmail이 보이면 허용하지 말고 연구회에 문의해 주세요.</p>
+    </div></div>
+
+    <div class="gstep"><span class="gnum">6</span><div class="gbody">
+      <h3>‘웹 앱 URL’을 복사합니다</h3>
+      <p>배포가 끝나면 주소가 두 개 보입니다. 위의 <b>배포 ID</b>가 아니라 아래 <b>웹 앱 URL</b>의 복사를 누르세요. 주소 끝이 <span class="code">/exec</span>이면 맞습니다.</p>
+      <div class="mock"><div class="bar"><b>새 배포</b></div><div class="in">
+        <span class="k">배포 ID <span class="tag no">이건 아님</span></span><div class="dim"><span class="url">AKfycbx7Qm3…T9pA</span> <span class="gb line">복사</span></div>
+        <span class="k">웹 앱 URL <span class="tag">이걸 복사</span></span><div><span class="url">https://script.google.com/macros/s/AKfycbx7Qm3…T9pA/exec</span> <span class="gb line hl">복사</span></div>
+        <div style="text-align:right"><span class="gb">완료</span></div></div></div>
+    </div></div>
+
+    <div class="gstep"><span class="gnum">7</span><div class="gbody">
+      <h3>이 화면 맨 위 칸에 붙여넣고 연결하기를 누릅니다</h3>
+      <p>관리코드 칸은 비워 둔 채 <b>연결하기</b>를 누르면 ‘연결됨’으로 바뀝니다. 이때 관리코드가 자동으로 만들어져 시트의 <b>설정</b> 탭에 저장됩니다.</p>
+      <div class="btns"><button class="btn" id="mb-top">맨 위 칸으로 가기</button></div>
+      <p class="why">관리코드는 연결 주소만 아는 사람이 설문을 바꾸거나 결과를 보지 못하게 막는 잠금장치입니다. 다른 PC에서 결과를 볼 때 설정 탭의 코드를 입력하면 됩니다. 학생에게는 알려주지 마세요.</p>
+    </div></div>
+  </section>`;
+}
+function bindConnect(){
+  const err=$('#mb-err');
+  $('#mb-connect').onclick = async ()=>{
+    err.hidden=true;
+    const url=$('#mb-url').value.trim(); const id=mailboxId(url);
+    if(!id){ err.textContent='주소 형식이 맞지 않습니다. https://script.google.com/macros/s/……/exec 형태인지 확인해 주세요.'; err.hidden=false; return; }
+    const base=mailboxUrl(id); let key=$('#mb-key').value.trim().toUpperCase();
+    try{
+      await mbGet(base,{action:'ping'});
+      if(!key){ const r=await mbGet(base,{action:'init'}); if(r.issued) key=r.key; else throw new Error(r.message); }
+      const list = await mbGet(base,{action:'list', key});
+      S.mailbox=base; S.key=key;
+      S.surveys = list.surveys.length ? list.surveys : [];
+      S.responses={}; S.view.sid=S.surveys[0]?.id||null; save();
+      toast('우리 학교 데이터 구글 드라이브에 연결했습니다'); render();
+    }catch(e){ err.textContent='연결하지 못했습니다. '+(e.message&&!/fetch|Load failed|NetworkError/i.test(e.message)?e.message+' ':'')+NET_HELP; err.hidden=false; }
+  };
+  const off=$('#mb-off'); if(off) off.onclick=()=>{ S=seed(); S.view.tab='connect'; save(); render(); };
+  $('#mb-top').onclick=()=>{ scrollTo({top:0,behavior:'smooth'}); setTimeout(()=>$('#mb-url').focus(),300); };
+}
+
+/* ---- 2. 설문 만들기 ---- */
+function viewCreate(){
+  if(!draft) draft = newSurvey();
+  const d = draft; const grades = LEVEL_GRADES[d.level];
+  const nMenu = allMenus(d).reduce((a,c)=>a+c.list.length,0);
+  return `
+  <div class="head"><h1>설문 만들기</h1>
+    <p>식단과 문항은 연구회 기본안이 미리 체크되어 있습니다. 우리 학교에 맞게 빼거나 더하면 됩니다.</p></div>
+  <section class="panel">
+    <h2>기본 정보</h2>
+    <div class="row">
+      <div class="field" style="flex:2 1 240px"><label for="f-school">학교명</label><input id="f-school" type="text" value="${esc(d.school)}" placeholder="예: ○○고등학교"></div>
+      <div class="field" style="flex:0 1 120px"><label for="f-level">학교급</label>
+        <select id="f-level">${['초','중','고'].map(l=>`<option ${l===d.level?'selected':''} value="${l}">${l}등학교</option>`).join('')}</select></div>
+    </div>
+    <div class="field"><label for="f-title">설문 제목</label><input id="f-title" type="text" value="${esc(d.title)}" placeholder="예: 2026학년도 2학기 학교급식 설문조사"></div>
+    <div class="row">
+      <div class="field"><span class="lbl">대상 학년</span>
+        <div class="chips">${grades.map(g=>`<button class="chip" data-grade="${g}" aria-pressed="${d.grades.includes(g)}">${g}학년</button>`).join('')}</div></div>
+      <div class="field" style="flex:0 1 130px"><label for="f-classes">학년별 최대 반 수</label><input id="f-classes" type="number" min="1" max="30" value="${d.classes}"></div>
+      <div class="field" style="flex:0 1 150px"><label for="f-students">대상 학생 수</label><input id="f-students" type="number" min="1" value="${d.students}"></div>
+    </div>
+    <div class="row">
+      <div class="field" style="flex:0 1 180px"><label for="f-start">시작일</label><input id="f-start" type="date" value="${d.start}"></div>
+      <div class="field" style="flex:0 1 180px"><label for="f-end">종료일</label><input id="f-end" type="date" value="${d.end}"></div>
+    </div>
+    <div class="field"><label for="f-intro">학생에게 보이는 시작 문구</label><textarea id="f-intro" rows="7">${esc(d.intro)}</textarea></div>
+  </section>
+
+  <section class="panel">
+    <div class="row" style="justify-content:space-between;align-items:center">
+      <h2>기호도 조사 식단</h2><span class="counter num">${nMenu}개 선택</span></div>
+    <p class="sub">학생에게는 “좋아하는 식단을 모두 선택해주세요”로 분류별로 한 화면씩 나옵니다. 분류마다 5~8개 정도가 적당합니다.</p>
+    ${CATALOG.map(c=>{
+      const sel=d.menus[c.key]||[]; const cust=d.customMenus[c.key]||[];
+      return `<div class="cat"><div class="cat-h"><h3>${c.name}</h3><span class="counter num">${sel.length+cust.length}개</span>
+        <button class="btn ghost" data-all="${c.key}">${sel.length===c.items.length?'모두 해제':'모두 선택'}</button></div>
+        <div class="chips">
+          ${c.items.map(m=>`<button class="chip" data-menu="${c.key}" data-name="${esc(m)}" aria-pressed="${sel.includes(m)}">${esc(m)}</button>`).join('')}
+          ${cust.map(m=>`<button class="chip custom" data-custom="${c.key}" data-name="${esc(m)}" aria-pressed="true" data-tip="누르면 삭제">${esc(m)} ✕</button>`).join('')}
+        </div>
+        <div class="add"><input type="text" id="add-${c.key}" placeholder="우리 학교 메뉴 추가"><button class="btn" data-addmenu="${c.key}">추가</button></div>
+      </div>`;}).join('')}
+  </section>
+
+  <section class="panel">
+    <div class="row" style="justify-content:space-between;align-items:center">
+      <h2>일반 설문 문항</h2><span class="counter num">${d.qids.length}개 선택</span></div>
+    <p class="sub">척도 문항은 ‘매우 그렇다 ~ 전혀 그렇지 않다’ 5단계로 응답합니다. 10개 안팎이 적당합니다. 서술형 문항은 추가 문항이 있어도 항상 맨 마지막에 나오고, 학생이 적지 않아도 넘어갈 수 있습니다.</p>
+    ${QBANK.map(g=>`<div class="qgroup"><div class="gname">${g.group}</div>
+      ${g.items.map(([id,t])=>`<label class="qitem"><input type="checkbox" data-q="${id}" ${d.qids.includes(id)?'checked':''}><span class="t">${esc(t)}</span><span class="k">${g.text?'서술형':'5단계'}</span></label>`).join('')}
+    </div>`).join('')}
+    ${d.customQ.length?`<div class="qgroup"><div class="gname">우리 학교 추가 문항</div>
+      ${d.customQ.map(q=>`<label class="qitem"><input type="checkbox" data-q="${q.id}" ${d.qids.includes(q.id)?'checked':''}><span class="t">${esc(q.text)}</span><span class="k">${q.type==='text'?'서술형':'5단계'}</span></label>`).join('')}</div>`:''}
+    <div class="row">
+      <div class="field" style="flex:3 1 260px"><label for="cq-text">문항 추가</label><input id="cq-text" type="text" placeholder="예: 배식량은 적당하다."></div>
+      <div class="field" style="flex:0 1 120px"><label for="cq-type">유형</label><select id="cq-type"><option value="scale">5단계</option><option value="text">서술형</option></select></div>
+      <button class="btn" id="cq-add">문항 추가</button>
+    </div>
+  </section>
+
+  <div class="btns">
+    <button class="btn primary" id="f-save">설문 저장하고 배포 화면으로</button>
+    <button class="btn" id="f-preview">학생 화면으로 미리보기</button>
+    <button class="btn ghost" id="f-reset">처음부터 다시</button>
+  </div>
+  <p class="err" id="f-err" hidden></p>`;
+}
+function readForm(){
+  const d=draft;
+  d.school=$('#f-school').value.trim(); d.title=$('#f-title').value.trim();
+  d.classes=Math.max(1,+$('#f-classes').value||1); d.students=Math.max(1,+$('#f-students').value||1);
+  d.start=$('#f-start').value; d.end=$('#f-end').value; d.intro=$('#f-intro').value;
+}
+function bindCreate(){
+  const keep = fn => ()=>{ readForm(); const y=scrollY; fn(); render(); scrollTo(0,y); };
+  $('#f-level').onchange = keep(()=>{ draft.level=$('#f-level').value; draft.grades=LEVEL_GRADES[draft.level].slice(); });
+  document.querySelectorAll('[data-grade]').forEach(b=>b.onclick=keep(()=>{ const g=+b.dataset.grade; const a=draft.grades; draft.grades = a.includes(g)? a.filter(x=>x!==g) : a.concat(g).sort(); }));
+  document.querySelectorAll('[data-menu]').forEach(b=>b.onclick=keep(()=>{ const k=b.dataset.menu, n=b.dataset.name; const a=draft.menus[k]||[]; draft.menus[k]= a.includes(n)? a.filter(x=>x!==n) : CATALOG.find(c=>c.key===k).items.filter(x=>a.includes(x)||x===n); }));
+  document.querySelectorAll('[data-all]').forEach(b=>b.onclick=keep(()=>{ const c=CATALOG.find(c=>c.key===b.dataset.all); draft.menus[c.key] = (draft.menus[c.key]||[]).length===c.items.length ? [] : c.items.slice(); }));
+  document.querySelectorAll('[data-custom]').forEach(b=>b.onclick=keep(()=>{ const k=b.dataset.custom; draft.customMenus[k]=(draft.customMenus[k]||[]).filter(x=>x!==b.dataset.name); }));
+  document.querySelectorAll('[data-addmenu]').forEach(b=>{
+    const k=b.dataset.addmenu; const inp=$('#add-'+k);
+    const add=keep(()=>{ const v=inp.value.trim(); if(!v) return; const all=(CATALOG.find(c=>c.key===k).items).concat(draft.customMenus[k]||[]);
+      if(all.includes(v)){ if(!(draft.menus[k]||[]).includes(v)) draft.menus[k]=(draft.menus[k]||[]).concat(v); } else draft.customMenus[k]=(draft.customMenus[k]||[]).concat(v); });
+    b.onclick=add; inp.onkeydown=e=>{ if(e.key==='Enter'){ e.preventDefault(); add(); } };
+  });
+  document.querySelectorAll('[data-q]').forEach(c=>c.onchange=keep(()=>{ const id=c.dataset.q; draft.qids = c.checked ? draft.qids.concat(id) : draft.qids.filter(x=>x!==id); }));
+  $('#cq-add').onclick=keep(()=>{ const t=$('#cq-text').value.trim(); if(!t) return; const id='c'+uid(5); draft.customQ.push({id,text:t,type:$('#cq-type').value,group:'우리 학교 추가 문항'}); draft.qids.push(id); });
+  $('#f-reset').onclick=()=>{ draft=newSurvey(); render(); };
+  $('#f-preview').onclick=()=>{ readForm(); mode='student'; studentSid='__draft'; resetStudent(); render(); scrollTo(0,0); };
+  $('#f-save').onclick=async ()=>{
+    readForm(); const err=$('#f-err'); err.hidden=true; const d=draft;
+    const problems=[];
+    if(!d.school) problems.push('학교명'); if(!d.grades.length) problems.push('대상 학년');
+    if(!d.start||!d.end||d.end<d.start) problems.push('설문 기간');
+    if(!allMenus(d).length && !d.qids.length) problems.push('식단 또는 문항');
+    if(problems.length){ err.textContent=problems.join(', ')+'을(를) 확인해 주세요.'; err.hidden=false; return; }
+    if(!d.title) d.title = `${new Date(d.start).getFullYear()}학년도 학교급식 설문조사`;
+    if(S.mailbox){
+      try{ await mbPost(S.mailbox,{action:'saveSurvey', key:S.key, survey:d}); }
+      catch(e){ err.textContent='구글 드라이브에 저장하지 못했습니다. '+(e.message||'')+' '+NET_HELP; err.hidden=false; return; }
+    }
+    const i=S.surveys.findIndex(s=>s.id===d.id); if(i>=0) S.surveys[i]=d; else S.surveys.unshift(d);
+    S.view.sid=d.id; S.view.tab='share'; save(); draft=null; toast('설문을 저장했습니다'); render(); scrollTo(0,0);
+  };
+}
+
+/* ---- 3. 배포 ---- */
+function studentLink(s){
+  const base = location.origin + location.pathname;
+  const mb = mailboxId(S.mailbox);
+  return mb ? `${base}?u=${mb}&s=${s.id}` : `${base}?demo=1&s=${s.id}`;
+}
+function planDoc(s){
+  return `제목 학교급식 설문조사 실시계획
+
+1. 관련: 학교급식 기본방향 및 학교급식 운영계획
+2. 학교급식에 대한 학생들의 의견을 수렴하여 급식 운영 개선에 반영하고자 다음과 같이 설문조사를 실시하고자 합니다.
+  가. 대상: ${gradeText(s)} ${s.students}명
+  나. 기간: ${fmtDate(s.start)} ~ ${fmtDate(s.end)}
+  다. 내용: 학교급식 기호도 및 일반조사
+  라. 방법: 온라인 설문조사
+  마. 결과 활용: 학교급식 운영 개선을 위한 기초자료로 활용
+  바. 결과 공개: 학교 홈페이지 공개
+
+붙임  학교급식 설문조사 양식 1부.  끝.`;
+}
+function resultDoc(s, a){
+  return `제목 학교급식 설문조사 결과 보고
+
+1. 관련: 학교급식 기본방향 및 학교급식 운영계획
+2. 학교급식에 대한 학생들의 의견을 수렴하고 급식 운영에 반영하고자 실시한 설문조사 결과를 다음과 같이 보고합니다.
+  가. 대상: ${gradeText(s)} ${s.students}명 중 ${a.N}명 응답(응답률 ${pct(a.N,s.students)}%)
+  나. 기간: ${fmtDate(s.start)} ~ ${fmtDate(s.end)}
+  다. 내용: 학교급식 기호도 및 일반조사
+  라. 방법: 온라인 설문조사
+  마. 결과 활용: 학교급식 운영 개선을 위한 기초자료로 활용
+  바. 결과 공개: 학교 홈페이지 공개
+
+붙임  학교급식 설문조사 결과보고서 1부.  끝.`;
+}
+function teacherMsg(s, link){
+  return `[학교급식 설문조사 참여 안내]
+담임선생님, 학교급식 개선을 위한 학생 설문조사를 실시합니다. 학급 학생들이 참여할 수 있도록 안내 부탁드립니다.
+
+- 대상: ${gradeText(s)}
+- 기간: ${fmtDate(s.start)} ~ ${fmtDate(s.end)}
+- 소요 시간: 3~5분
+- 참여 방법: 휴대폰 카메라로 QR 코드를 찍거나 아래 링크로 접속
+- 참여 링크: ${link}
+
+이름과 학번은 받지 않고 학년과 반만 입력합니다. 휴대폰 한 대로 한 번만 응답할 수 있습니다.
+감사합니다.`;
+}
+function viewShare(){
+  if(!S.surveys.length) return `<div class="head"><h1>배포하기</h1></div><section class="panel"><p class="empty">아직 만든 설문이 없습니다. 2단계에서 설문을 만들어 주세요.</p></section>`;
+  const s = survey(S.view.sid) || S.surveys[0]; S.view.sid=s.id;
+  const link = studentLink(s);
+  return `
+  <div class="head"><h1>배포하기</h1><p>QR 코드나 링크를 담임선생님께 보내 주세요. 학생은 로그인 없이 휴대폰으로 응답합니다.</p></div>
+  ${surveyPicker(s)}
+  <section class="panel">
+    <div class="share">
+      <div class="qrcol">
+        <div class="qr" id="qr" aria-label="학생용 QR 코드"></div>
+        <button class="btn" id="qr-copy">QR 이미지 복사</button>
+        <button class="btn" id="qr-save">QR 이미지 저장</button>
+        <button class="btn" id="qr-poster">교실 게시용 안내문 저장</button>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px;min-width:0">
+        <div><h2>${esc(s.title)}</h2><p class="sub">${esc(s.school)} · ${gradeText(s)} · ${fmtDate(s.start)} ~ ${fmtDate(s.end)}</p></div>
+        <div class="field"><label for="sh-link">학생용 링크</label>
+          <div class="linkbox"><input id="sh-link" type="text" readonly value="${esc(link)}"><button class="btn" id="sh-copy">복사</button></div></div>
+        <div class="btns">
+          <button class="btn primary" id="sh-preview">학생 화면 미리보기</button>
+          <button class="btn" id="sh-edit">설문 고치기</button>
+        </div>
+        <p class="sub">교실 게시용 안내문은 설문 제목, 기간, 큰 QR이 들어간 그림 파일입니다. 출력해서 교실이나 급식실에 붙이면 됩니다.</p>
+        ${!S.mailbox?'<p class="sub">체험 모드 링크는 이 브라우저에서만 열립니다. 구글 드라이브를 연결하면 학생 휴대폰에서 열리는 링크로 바뀝니다.</p>':''}
+      </div>
+    </div>
+  </section>
+  <section class="panel">
+    <div class="row" style="justify-content:space-between;align-items:center"><h2>담임선생님 안내 메시지</h2>
+      <button class="btn primary" id="sh-msg">메시지 복사</button></div>
+    <p class="sub">업무 메신저에 붙여넣어 담임선생님들께 보내세요. 참여 링크가 함께 들어 있습니다.</p>
+    <pre class="doc">${esc(teacherMsg(s, link))}</pre>
+  </section>
+  <section class="panel">
+    <div class="row" style="justify-content:space-between;align-items:center"><h2>계획 기안문</h2>
+      <div class="btns"><button class="btn" id="sh-plan">본문 복사</button><button class="btn primary" id="sh-hwpx">붙임 설문지 양식(hwpx)</button></div></div>
+    <p class="sub">본문은 에듀파인 본문 칸에 붙여넣고, 설문지 양식은 붙임 파일로 올리세요. 설문지 양식에는 이 설문의 식단과 문항이 앱과 같은 순서로 들어갑니다.</p>
+    <pre class="doc">${esc(planDoc(s))}</pre>
+  </section>`;
+}
+function surveyPicker(s){
+  if(S.surveys.length<2) return '';
+  return `<div class="field" style="max-width:420px"><label for="pick">설문 선택</label><select id="pick">${S.surveys.map(x=>`<option value="${x.id}" ${x.id===s.id?'selected':''}>${esc(x.title)}${x.example?' (예시)':''}</option>`).join('')}</select></div>`;
+}
+function bindPicker(){ const p=$('#pick'); if(p) p.onchange=()=>{ S.view.sid=p.value; save(); showReport=false; render(); }; }
+function qrCanvas(text, size){
+  const box=document.createElement('div');
+  new QRCode(box, {text, width:size, height:size, colorDark:'#000000', colorLight:'#ffffff', correctLevel:QRCode.CorrectLevel.M});
+  return box.querySelector('canvas');
+}
+function toBlob(cv){ return new Promise(res=>cv.toBlob(res,'image/png')); }
+function qrPng(link){ // 여백을 둔 QR 그림
+  const q=qrCanvas(link, 480), cv=document.createElement('canvas'); cv.width=cv.height=560;
+  const g=cv.getContext('2d'); g.fillStyle='#ffffff'; g.fillRect(0,0,560,560); g.drawImage(q,40,40); return cv;
+}
+function posterPng(s, link){ // A4 비율 교실 게시용
+  const W=1240, H=1754, cv=document.createElement('canvas'); cv.width=W; cv.height=H;
+  const g=cv.getContext('2d'), font='"Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif';
+  g.fillStyle='#ffffff'; g.fillRect(0,0,W,H);
+  g.fillStyle='#2d6a4f'; g.fillRect(0,0,W,24);
+  g.textAlign='center'; g.fillStyle='#2d6a4f'; g.font=`700 44px ${font}`; g.fillText(s.school||'', W/2, 170);
+  g.fillStyle='#1c241f'; g.font=`700 66px ${font}`;
+  const t=s.title||'학교급식 설문조사'; const words=t.split(' '); let line='', y=280, lines=[];
+  words.forEach(w=>{ const tryl=line?line+' '+w:w; if(g.measureText(tryl).width>W-160){ lines.push(line); line=w; } else line=tryl; }); lines.push(line);
+  lines.forEach(l=>{ g.fillText(l, W/2, y); y+=86; });
+  g.fillStyle='#56605a'; g.font=`500 38px ${font}`; g.fillText(`${gradeText(s)} · ${fmtDate(s.start)} ~ ${fmtDate(s.end)}`, W/2, y+10);
+  const q=qrCanvas(link, 760); const qy=y+70; g.drawImage(q,(W-760)/2,qy);
+  g.fillStyle='#1c241f'; g.font=`700 50px ${font}`; g.fillText('휴대폰 카메라로 QR 코드를 찍어 참여해 주세요', W/2, qy+860);
+  g.fillStyle='#56605a'; g.font=`400 34px ${font}`; g.fillText('약 3~5분 · 이름과 학번은 묻지 않아요', W/2, qy+925);
+  return cv;
+}
+function bindShare(){
+  bindPicker(); const s=survey(S.view.sid); if(!s) return;
+  const link=studentLink(s);
+  try{ if(window.QRCode) new QRCode($('#qr'), {text:link, width:160, height:160, colorDark:'#1c241f', colorLight:'#ffffff', correctLevel:QRCode.CorrectLevel.M}); else $('#qr').textContent='QR'; }catch(e){ $('#qr').textContent='QR을 만들지 못했습니다'; }
+  const noQR=()=>{ if(!window.QRCode){ toast('QR 기능을 불러오지 못했습니다. 인터넷 연결을 확인해 주세요.'); return true; } return false; };
+  $('#qr-copy').onclick=()=>{
+    if(noQR()) return;
+    try{
+      const blob=toBlob(qrPng(link));
+      navigator.clipboard.write([new ClipboardItem({'image/png': blob})]).then(()=>toast('QR 이미지를 복사했습니다. 한글이나 메신저에 붙여넣으세요'), ()=>toast('이 화면에서는 이미지 복사가 막혀 있습니다. QR 이미지 저장을 이용해 주세요.'));
+    }catch(e){ toast('이 화면에서는 이미지 복사가 막혀 있습니다. QR 이미지 저장을 이용해 주세요.'); }
+  };
+  $('#qr-save').onclick=async ()=>{ if(noQR()) return; saveFile(`${safeName(s.school)}_급식설문_QR.png`, await toBlob(qrPng(link)), 'image/png'); };
+  $('#qr-poster').onclick=async ()=>{ if(noQR()) return; try{ await document.fonts.ready; }catch(e){} saveFile(`${safeName(s.school)}_급식설문_게시용.png`, await toBlob(posterPng(s,link)), 'image/png'); };
+  $('#sh-copy').onclick=()=>copy(link,'링크를 복사했습니다');
+  $('#sh-preview').onclick=()=>{ mode='student'; studentSid=s.id; resetStudent(); render(); scrollTo(0,0); };
+  $('#sh-msg').onclick=()=>copy(teacherMsg(s, link),'담임 안내 메시지를 복사했습니다');
+  $('#sh-plan').onclick=()=>copy(planDoc(s),'계획 기안문을 복사했습니다');
+  $('#sh-hwpx').onclick=async ()=>{
+    if(!window.JSZip){ toast('문서 기능을 불러오지 못했습니다. 인터넷 연결을 확인해 주세요.'); return; }
+    try{ saveFile(`${safeName(s.school)}_학교급식_설문지.hwpx`, await surveyHwpx(s), 'application/hwp+zip'); }
+    catch(e){ console.error(e); toast('설문지 양식을 만들지 못했습니다.'); }
+  };
+  $('#sh-edit').onclick=()=>{ draft=JSON.parse(JSON.stringify(s)); S.view.tab='create'; save(); render(); scrollTo(0,0); };
+}
+
+/* ---- 한글(hwpx) 설문지 양식 ----
+   연구회 회의자료 hwpx의 글꼴·문단 모양을 그대로 쓴 틀에, 참조 문단을 복제해 내용을 채운다. */
+const HWPX_TPL = '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';
+const HPNS = 'http://www.hancom.co.kr/hwpml/2011/paragraph';
+function surveyLines(s){
+  const L=[]; const add=(k,t)=>L.push([k,t]);
+  add('CENTER', `${s.school} · ${gradeText(s)} · ${fmtDate(s.start)} ~ ${fmtDate(s.end)}`);
+  add('TEXT','');
+  (s.intro||'').split('\n').forEach(t=>add('TEXT', t));
+  add('TEXT','');
+  add('HEAD','■ 기본 정보');
+  add('IND1', `학년: (      )학년        반: (      )반`);
+  add('TEXT','');
+  const menus=allMenus(s);
+  if(menus.length){
+    add('HEAD','Ⅰ. 기호도 조사');
+    add('TEXT','좋아하는 식단을 모두 골라 □ 안에 √ 표시해 주세요.');
+    menus.forEach((c,i)=>{ add('IND1', `${i+1}) ${c.name}`); add('IND2', c.list.map(m=>'□ '+m).join('     ')); });
+    add('TEXT','');
+  }
+  const qs=surveyQs(s);
+  if(qs.length){
+    add('HEAD', `${menus.length?'Ⅱ':'Ⅰ'}. 일반 설문`);
+    add('TEXT','각 문항을 읽고 해당하는 번호에 ○ 표시하거나 의견을 적어 주세요.');
+    qs.forEach((q,i)=>{
+      add('TEXT', `${i+1}. ${q.text}`);
+      if(q.type==='scale') add('IND2', '① 매우 그렇다     ② 그렇다     ③ 보통이다     ④ 그렇지 않다     ⑤ 전혀 그렇지 않다');
+      else { add('IND2','(                                                                                              )'); }
+    });
+    add('TEXT','');
+  }
+  add('CENTER','설문에 참여해 주셔서 감사합니다.');
+  return L;
+}
+const HCNS = 'http://www.hancom.co.kr/hwpml/2011/core';
+async function loadTpl(){
+  const zip = await JSZip.loadAsync(HWPX_TPL, {base64:true, createFolders:false});
+  const xml = await zip.file('Contents/section0.xml').async('string');
+  const doc = new DOMParser().parseFromString(xml, 'application/xml');
+  const sec = doc.documentElement;
+  const lastT = p => { const ts=p.getElementsByTagNameNS(HPNS,'t'); return ts[ts.length-1]; };
+  const refs = {}; let first = null;
+  Array.from(sec.childNodes).forEach(p=>{
+    if(p.nodeType!==1 || p.localName!=='p') return;
+    const sc=p.getElementsByTagNameNS(HPNS,'shapeComment')[0];
+    if(sc && sc.textContent==='{{PIC}}'){ refs.PIC=p; sec.removeChild(p); return; }
+    const t=lastT(p); const m=t && (t.textContent||'').match(/^\{\{(\w+)\}\}$/);
+    if(!m) return;
+    if(m[1]==='TITLE') first=p; else { refs[m[1]]=p; sec.removeChild(p); }
+  });
+  const T = { zip, doc, sec, plain:[], images:0,
+    title(text){ lastT(first).textContent=text; T.plain.push(text); },
+    add(kind, text){ const p=refs[kind].cloneNode(true); lastT(p).textContent=text; sec.appendChild(p); T.plain.push(text); },
+    addPic(blob, pw, ph){ // pw, ph: 그림 픽셀 크기 → 본문 폭(42520)에 맞춤
+      const n=++T.images, W=42520, H=Math.round(W*ph/pw);
+      zip.file(`BinData/image${n}.png`, blob, {createFolders:false});
+      const p=refs.PIC.cloneNode(true);
+      const el=(ns,name)=>p.getElementsByTagNameNS(ns,name)[0];
+      const set=(e,o)=>Object.entries(o).forEach(([k,v])=>e.setAttribute(k,String(v)));
+      set(el(HPNS,'pic'), {id: 1000000000+Math.floor(Math.random()*900000000), instid: 100000000+Math.floor(Math.random()*90000000)});
+      set(el(HPNS,'orgSz'), {width:W, height:H});
+      set(el(HPNS,'rotationInfo'), {centerX:Math.round(W/2), centerY:Math.round(H/2)});
+      set(el(HCNS,'img'), {binaryItemIDRef:`image${n}`});
+      set(el(HCNS,'pt1'), {x:W, y:0}); set(el(HCNS,'pt2'), {x:W, y:H}); set(el(HCNS,'pt3'), {x:0, y:H});
+      set(el(HPNS,'imgClip'), {left:0, right:W, top:0, bottom:H});
+      set(el(HPNS,'imgDim'), {dimwidth:W, dimheight:H});
+      set(el(HPNS,'sz'), {width:W, height:H});
+      el(HPNS,'shapeComment').textContent='그림입니다.';
+      sec.appendChild(p);
+    },
+    async finish(){
+      let out = new XMLSerializer().serializeToString(doc);
+      if(!out.startsWith('<?xml')) out = '<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>' + out;
+      zip.file('Contents/section0.xml', out, {createFolders:false});
+      if(T.images){
+        let hpf = await zip.file('Contents/content.hpf').async('string');
+        const items = Array.from({length:T.images},(_,i)=>`<opf:item id="image${i+1}" href="BinData/image${i+1}.png" media-type="image/png" isEmbeded="1"/>`).join('');
+        hpf = hpf.replace('<opf:item id="section0"', items+'<opf:item id="section0"');
+        zip.file('Contents/content.hpf', hpf, {createFolders:false});
+      }
+      zip.file('Preview/PrvText.txt', T.plain.join('\r\n').slice(0,1000), {createFolders:false});
+      zip.file('mimetype', 'application/hwp+zip', {compression:'STORE', createFolders:false});
+      return zip.generateAsync({type:'blob', compression:'DEFLATE', mimeType:'application/hwp+zip'});
+    }
+  };
+  return T;
+}
+async function surveyHwpx(s){
+  const T = await loadTpl();
+  T.title(s.title || '학교급식 설문조사');
+  surveyLines(s).forEach(([k,text])=>T.add(k,text));
+  return T.finish();
+}
+
+/* ---- 결과보고서(hwpx): 미리보기 표를 행마다 그림으로 그려서 넣는다 ---- */
+const RFONT='"Noto Sans KR","Malgun Gothic","Apple SD Gothic Neo",sans-serif';
+const RC={line:'#9aa79f', head:'#e9f2ec', ana:'#f4f9ee', ink:'#1a1a1a', sub:'#444444', bar:'#3c8a64', track:'#eef0ec',
+  l5:'#2d6a4f', l4:'#8dbea4', l3:'#c6c9c1', l2:'#e8b49b', l1:'#b9502b'};
+function wrapText(g, text, maxW){
+  const out=[]; String(text||'').split('\n').forEach(par=>{
+    let line=''; const toks=par.split(/(\s+)/);
+    toks.forEach(tok=>{
+      const tryl=line+tok;
+      if(g.measureText(tryl).width<=maxW){ line=tryl; return; }
+      if(line.trim()) { out.push(line.trimEnd()); line=''; }
+      tok=tok.replace(/^\s+/,'');
+      for(const ch of tok){ if(g.measureText(line+ch).width>maxW){ out.push(line); line=ch; } else line+=ch; }
+    });
+    out.push(line.trimEnd());
+  });
+  return out;
+}
+function rowCanvas(row){
+  const CW=1600, LW=Math.round(CW*0.64), pad=30, fs=30, lh=46;
+  const meas=document.createElement('canvas').getContext('2d');
+  // 높이 계산
+  meas.font=`700 ${fs}px ${RFONT}`; const tl=wrapText(meas, row.title, LW-pad*2);
+  let leftH = pad + tl.length*lh + 10 + row.bodyH + pad;
+  meas.font=`400 ${fs}px ${RFONT}`; const al=wrapText(meas, row.ana, CW-LW-pad*2);
+  const rightH = pad + al.length*lh + pad;
+  const H=Math.max(leftH, rightH, 140);
+  const cv=document.createElement('canvas'); cv.width=CW; cv.height=H; const g=cv.getContext('2d');
+  g.fillStyle='#ffffff'; g.fillRect(0,0,CW,H);
+  g.fillStyle=RC.ana; g.fillRect(LW,0,CW-LW,H);
+  g.textBaseline='alphabetic'; g.fillStyle=RC.ink;
+  g.font=`700 ${fs}px ${RFONT}`; let y=pad+fs;
+  tl.forEach(l=>{ g.fillText(l,pad,y); y+=lh; });
+  row.draw(g, pad, y-fs+10, LW-pad*2, fs);
+  g.font=`400 ${fs}px ${RFONT}`; g.fillStyle=RC.ink; let ay=pad+fs;
+  al.forEach(l=>{ g.fillText(l, LW+pad, ay); ay+=lh; });
+  g.strokeStyle=RC.line; g.lineWidth=2; g.strokeRect(1,1,CW-2,H-2); g.beginPath(); g.moveTo(LW,0); g.lineTo(LW,H); g.stroke();
+  return cv;
+}
+function headCanvas(){
+  const CW=1600, LW=Math.round(CW*0.64), H=72; const cv=document.createElement('canvas'); cv.width=CW; cv.height=H; const g=cv.getContext('2d');
+  g.fillStyle=RC.head; g.fillRect(0,0,CW,H); g.fillStyle=RC.ink; g.font=`700 30px ${RFONT}`; g.textAlign='center';
+  g.fillText('질문 / 결과', LW/2, 47); g.fillText('결과분석 및 조치', LW+(CW-LW)/2, 47);
+  g.strokeStyle=RC.line; g.lineWidth=2; g.strokeRect(1,1,CW-2,H-2); g.beginPath(); g.moveTo(LW,0); g.lineTo(LW,H); g.stroke();
+  return cv;
+}
+function reportRows(s,a){
+  const rows=[]; const fs=30;
+  const all=a.menu.flatMap(c=>c.items).sort((x,y)=>y.p-x.p).slice(0,10);
+  rows.push({ title:`기호도 조사 · 좋아하는 식단 상위 ${all.length}개 (응답 ${a.N}명)`, ana:getNote(s.id,'menu',menuNote(a)), bodyH: all.length*44,
+    draw(g,x,y,w){ g.font=`400 ${fs-2}px ${RFONT}`; all.forEach((it,i)=>{ const yy=y+i*44; g.fillStyle=RC.ink; g.textAlign='left'; g.fillText(it.name, x, yy+30);
+      const bx=x+250, bw=w-250-110; g.fillStyle=RC.track; g.fillRect(bx,yy+12,bw,22); g.fillStyle=RC.bar; g.fillRect(bx,yy+12,Math.max(2,bw*it.p/100),22);
+      g.fillStyle=RC.ink; g.textAlign='right'; g.fillText(it.p+'%', x+w, yy+30); g.textAlign='left'; }); } });
+  a.qs.forEach((q,i)=>{
+    const title=`${i+1}. ${q.text} (응답 ${q.cnt}명)`, ana=getNote(s.id,q.id,autoNote(q));
+    if(q.type==='scale'){
+      const legend=LIKERT.map(l=>`${l.t} ${pct(q.dist[l.v],q.cnt)}%`).join(' · ');
+      rows.push({title, ana, bodyH: 40+ 2*40, draw(g,x,y,w){
+        let bx=x; LIKERT.forEach(l=>{ const bw=w*pct(q.dist[l.v],q.cnt)/100; if(bw>0){ g.fillStyle=RC['l'+l.v]; g.fillRect(bx,y+6,Math.max(0,bw-3),30); bx+=bw; } });
+        g.fillStyle=RC.sub; g.font=`400 ${fs-6}px ${RFONT}`; let yy=y+76; wrapText(g, legend, w).forEach(l=>{ g.fillText(l,x,yy); yy+=36; }); } });
+    } else {
+      const words=q.words.slice(0,10).map(([w,n])=>`${w}(${n})`).join(', ') || '응답 없음';
+      const meas=document.createElement('canvas').getContext('2d'); meas.font=`400 ${fs-2}px ${RFONT}`;
+      const lines=wrapText(meas, words, Math.round(1600*0.64)-60);
+      rows.push({title, ana, bodyH: lines.length*42+6, draw(g,x,y,w){ g.fillStyle=RC.sub; g.font=`400 ${fs-2}px ${RFONT}`; let yy=y+34; lines.forEach(l=>{ g.fillText(l,x,yy); yy+=42; }); } });
+    }
+  });
+  return rows;
+}
+async function reportHwpx(s,a){
+  try{ await document.fonts.ready; }catch(e){}
+  const T = await loadTpl();
+  T.title(`◈ ${s.title} 결과 ◈`);
+  T.add('TEXT','');
+  T.add('TEXT','- 조사 방법: 온라인 설문조사');
+  T.add('TEXT',`- 대상: ${gradeText(s)} ${s.students}명 중 ${a.N}명 응답(응답률 ${pct(a.N,s.students)}%)`);
+  T.add('TEXT',`- 기간: ${fmtDate(s.start)} ~ ${fmtDate(s.end)}`);
+  T.add('TEXT','');
+  const cvs=[headCanvas()].concat(reportRows(s,a).map(rowCanvas));
+  for(const cv of cvs){ T.addPic(await toBlob(cv), cv.width, cv.height); }
+  return T.finish();
+}
+
+/* ---- 4. 결과 ---- */
+let loading=false, loadErr='';
+function rowsOf(s){ return S.responses[s.id] || null; }
+function viewResults(){
+  if(!S.surveys.length) return `<div class="head"><h1>결과 보기</h1></div><section class="panel"><p class="empty">아직 만든 설문이 없습니다.</p></section>`;
+  const s = survey(S.view.sid) || S.surveys[0]; S.view.sid=s.id;
+  const rows = rowsOf(s);
+  const head = `<div class="head"><h1>결과 보기</h1><p>${S.mailbox?'‘결과 불러오기’를 누르면 우리 학교 데이터 구글 드라이브의 응답을 가져와 바로 집계합니다.':'체험 모드에서는 이 브라우저에 저장된 응답(예시 포함)으로 집계합니다.'}</p></div>
+    ${surveyPicker(s)}
+    <div class="btns">
+      ${S.mailbox?`<button class="btn primary" id="r-load">${loading?'불러오는 중…':'결과 불러오기'}</button>`:`<button class="btn" id="r-fake">예시 응답 ${rows&&rows.length?'다시 ':''}만들기</button>`}
+      <button class="btn" id="r-csv" ${rows&&rows.length?'':'disabled'}>전체 응답 CSV</button>
+      <button class="btn" id="r-docview">결과 기안문 미리보기</button>
+      <button class="btn" id="r-report" ${rows&&rows.length?'':'disabled'}>${showReport?'결과 화면으로':'결과보고서 미리보기'}</button>
+      <button class="btn" id="r-hwpx" ${rows&&rows.length?'':'disabled'}>결과보고서(hwpx)</button>
+      <button class="btn" id="r-ai" ${rows&&rows.length?'':'disabled'}>AI 분석 요청문 복사</button>
+    </div>
+    ${loadErr?`<p class="err">${esc(loadErr)}</p>`:''}`;
+  if(!rows || !rows.length) return head + `<section class="panel"><p class="empty">${S.mailbox?'아직 불러온 응답이 없습니다.':'아직 응답이 없습니다. 학생 화면에서 직접 응답해 보거나 예시 응답을 만들어 보세요.'}</p></section>` + resultDocPanel(s, analyze(s, []));
+  const a = analyze(s, rows);
+  if(showReport) return head + reportHTML(s,a) + resultDocPanel(s,a);
+  const rate = pct(a.N, s.students);
+  const lowCut = Math.max(1, Math.round(a.N / (s.grades.length*s.classes) * .5));
+  return head + `
+  <div class="kpis">
+    <div class="kpi"><div class="k">응답 인원</div><div class="v num">${a.N}<small>명</small></div></div>
+    <div class="kpi"><div class="k">응답률 (목표 30%)</div><div class="v num">${rate}<small>%</small></div><div class="meter"><i style="width:${Math.min(100,rate)}%"></i></div></div>
+    <div class="kpi"><div class="k">급식 전반 만족</div><div class="v num">${(a.qs.find(q=>q.id==='g1')||a.qs.find(q=>q.type==='scale')||{pos:0}).pos}<small>%</small></div></div>
+    <div class="kpi"><div class="k">설문 기간</div><div class="v" style="font-size:16px;padding-top:6px">${fmtDate(s.start)}<br>~ ${fmtDate(s.end)}</div></div>
+  </div>
+
+  <section class="panel">
+    <div class="row" style="justify-content:space-between;align-items:center"><h2>학년·반별 응답</h2><span class="sub">주황색은 평균의 절반 미만인 반입니다</span></div>
+    ${s.grades.map(g=>`<div><div class="lbl" style="margin-bottom:6px">${g}학년 · ${Array.from({length:s.classes},(_,i)=>a.byClass[g+'-'+(i+1)]||0).reduce((x,y)=>x+y,0)}명</div>
+      <div class="classgrid">${Array.from({length:s.classes},(_,i)=>{ const n=a.byClass[g+'-'+(i+1)]||0; return `<div class="cls ${n<lowCut?'low':''}"><span>${i+1}반</span><b class="num">${n}</b></div>`; }).join('')}</div></div>`).join('')}
+  </section>
+
+  <section class="panel">
+    <div class="row" style="justify-content:space-between;align-items:center"><h2>기호도 조사</h2><span class="sub">좋아한다고 선택한 학생 비율</span></div>
+    <div class="menu-cols">
+      ${a.menu.map(c=>`<div class="mcat"><h3><span>${c.name}</span></h3>
+        ${c.items.map((it,i)=>`<div class="hbar ${i<3&&it.n?'top':''}"><span class="name">${esc(it.name)}</span><span class="track"><i class="fill" style="width:${it.p}%" data-tip="${esc(it.name)} · ${it.n}명 (${it.p}%)"></i></span><span class="val num"><b>${it.p}%</b> ${it.n}명</span></div>`).join('')}
+      </div>`).join('')}
+    </div>
+    <div class="note"><div class="lbl"><span>결과분석 및 조치</span><button class="btn ghost" data-reset="menu">자동 문장으로 되돌리기</button></div>
+      <textarea data-note="menu">${esc(getNote(s.id,'menu',menuNote(a)))}</textarea></div>
+  </section>
+
+  <section class="panel">
+    <h2>일반 설문</h2>
+    <div class="lgd">${LIKERT.map(l=>`<span><i style="background:var(${l.c})"></i>${l.t}</span>`).join('')}</div>
+    ${a.qs.map((q,i)=>`<div class="q">
+      <div>
+        <div class="qt">${i+1}. ${esc(q.text)}</div>
+        ${q.type==='scale' ? `${stackBar(q)}
+          <div class="qnums num"><span>긍정 <b>${q.pos}%</b></span><span>보통 <b>${q.mid}%</b></span><span>부정 <b>${q.neg}%</b></span><span>평균 <b>${q.mean}</b>/5</span><span>응답 ${q.cnt}명</span></div>`
+        : `<p class="sub" style="margin:6px 0 8px">응답 ${q.cnt}명 · 같은 메뉴끼리 묶어서 많은 순으로 보여줍니다</p>
+          <div class="words">${q.words.slice(0,14).map(([w,n])=>`<span class="word">${esc(w)}<b class="num">${n}</b></span>`).join('')||'<span class="sub">응답 없음</span>'}</div>`}
+      </div>
+      <div class="note"><div class="lbl"><span>결과분석 및 조치</span><button class="btn ghost" data-reset="${q.id}">자동 문장</button></div>
+        <textarea data-note="${q.id}">${esc(getNote(s.id,q.id,autoNote(q)))}</textarea></div>
+    </div>`).join('')}
+  </section>` + resultDocPanel(s,a);
+}
+function resultDocPanel(s,a){
+  return `<section class="panel" id="r-docpanel">
+    <div class="row" style="justify-content:space-between;align-items:center"><h2>결과 기안문 미리보기</h2>
+      <div class="btns"><button class="btn" id="r-doc">본문 복사</button><button class="btn primary" id="r-hwpx3" ${a.N?'':'disabled'}>붙임 결과보고서(hwpx)</button></div></div>
+    <p class="sub">본문은 에듀파인 본문 칸에 붙여넣고, 결과보고서는 붙임 파일로 올리세요. 응답 인원과 응답률은 결과에서 자동으로 채워집니다.</p>
+    <pre class="doc">${esc(resultDoc(s,a))}</pre>
+  </section>`;
+}
+function stackBar(q){
+  return `<div class="stack" role="img" aria-label="${LIKERT.map(l=>`${l.t} ${pct(q.dist[l.v],q.cnt)}%`).join(', ')}">${LIKERT.map(l=>{ const p=pct(q.dist[l.v],q.cnt); return p?`<i style="width:${p}%;background:var(${l.c})" data-tip="${l.t} · ${q.dist[l.v]}명 (${p}%)"></i>`:''; }).join('')}</div>`;
+}
+function reportHTML(s,a){
+  const all = a.menu.flatMap(c=>c.items.map(i=>({...i,cat:c.name}))).sort((x,y)=>y.p-x.p);
+  return `<section class="panel">
+    <div class="row" style="justify-content:space-between;align-items:center"><h2>결과보고서 미리보기</h2>
+      <button class="btn primary" id="r-hwpx2">결과보고서 내려받기(hwpx)</button></div>
+    <p class="sub">회의자료 예시처럼 질문 / 결과 / 결과분석 3칸 구성입니다. 결과분석 칸은 결과 화면에서 고친 문장이 그대로 들어갑니다.</p>
+    <div class="report">
+      <h2>◈ ${esc(s.title)} 결과 ◈</h2>
+      <p class="meta">- 조사 방법: 온라인 설문조사<br>- 대상: ${gradeText(s)} ${s.students}명 중 ${a.N}명 응답(응답률 ${pct(a.N,s.students)}%)<br>- 기간: ${fmtDate(s.start)} ~ ${fmtDate(s.end)}</p>
+      <table><thead><tr><th>질문 / 결과</th><th>결과분석 및 조치</th></tr></thead><tbody>
+        <tr><td><b>기호도 조사 · 좋아하는 식단 상위 10개</b> (응답 ${a.N}명)
+          <div style="margin-top:8px">${all.slice(0,10).map(i=>`<div class="rbar"><span>${esc(i.name)}</span><span class="tr"><i style="width:${i.p}%"></i></span><span class="num">${i.p}%</span></div>`).join('')}</div></td>
+          <td class="ana">${esc(getNote(s.id,'menu',menuNote(a)))}</td></tr>
+        ${a.qs.map((q,i)=>`<tr><td><b>${i+1}. ${esc(q.text)}</b> (응답 ${q.cnt}명)
+          ${q.type==='scale'? stackBar(q)+`<div style="font-size:12px">${LIKERT.map(l=>`${l.t} ${pct(q.dist[l.v],q.cnt)}%`).join(' · ')}</div>` : `<div style="margin-top:6px">${q.words.slice(0,8).map(([w,n])=>`${esc(w)}(${n})`).join(', ')}</div>`}</td>
+          <td class="ana">${esc(getNote(s.id,q.id,autoNote(q)))}</td></tr>`).join('')}
+      </tbody></table>
+    </div></section>`;
+}
+function csvOf(s, rows){
+  const menus = allMenus(s).flatMap(c=>c.list.map(m=>({c:c.name,m})));
+  const qs = surveyQs(s);
+  const head = ['제출시각','학년','반', ...menus.map(x=>`[기호도] ${x.c}-${x.m}`), ...qs.map((q,i)=>`[문항${i+1}] ${q.text}`)];
+  const cell = v => { const t=String(v??''); return /[",\n]/.test(t) ? `"${t.replace(/"/g,'""')}"` : t; };
+  const lines = [head.map(cell).join(',')];
+  rows.forEach(r=>lines.push([new Date(r.at).toLocaleString('ko-KR'), r.grade, r.cls, ...menus.map(x=>r.likes.includes(x.m)?1:0), ...qs.map(q=>r.answers[q.id]??'')].map(cell).join(',')));
+  return '﻿' + lines.join('\r\n');
+}
+function aiPrompt(s,a){
+  const lines = [`다음은 ${s.school} 학생 대상 학교급식 설문조사 집계 결과입니다. (응답 ${a.N}명, 응답률 ${pct(a.N,s.students)}%)`,
+    `각 항목마다 결과보고서의 '결과분석 및 조치' 칸에 들어갈 문장을 2~3문장으로 써 주세요. 학교 결과보고서 문체(~였습니다, ~하겠습니다)로, 수치를 근거로 쓰고 실행 가능한 조치를 한 가지씩 넣어 주세요.`, '',
+    '[기호도 조사: 좋아한다고 선택한 비율]'];
+  a.menu.forEach(c=>lines.push(`- ${c.name}: ${c.items.map(i=>`${i.name} ${i.p}%`).join(', ')}`));
+  lines.push('', '[일반 설문]');
+  a.qs.forEach((q,i)=>{
+    if(q.type==='scale') lines.push(`${i+1}. ${q.text} → 매우 그렇다 ${pct(q.dist[5],q.cnt)}%, 그렇다 ${pct(q.dist[4],q.cnt)}%, 보통 ${pct(q.dist[3],q.cnt)}%, 그렇지 않다 ${pct(q.dist[2],q.cnt)}%, 전혀 그렇지 않다 ${pct(q.dist[1],q.cnt)}% (평균 ${q.mean})`);
+    else lines.push(`${i+1}. ${q.text} → ${q.words.slice(0,15).map(([w,n])=>`${w}(${n})`).join(', ')}`);
+  });
+  return lines.join('\n');
+}
+function bindResults(){
+  bindPicker(); const s=survey(S.view.sid); if(!s) return;
+  const rows=rowsOf(s)||[];
+  const fake=$('#r-fake'); if(fake) fake.onclick=()=>{ S.responses[s.id]=fakeResponses(s, Math.round(s.students*(.32+Math.random()*.15))); delete S.notes[s.id]; save(); render(); toast('예시 응답을 만들었습니다'); };
+  const load=$('#r-load'); if(load) load.onclick=async ()=>{
+    loading=true; loadErr=''; render();
+    try{ const r=await mbGet(S.mailbox,{action:'results', id:s.id, key:S.key}); S.responses[s.id]=r.rows; save(); toast(`응답 ${r.rows.length}건을 불러왔습니다`); }
+    catch(e){ loadErr='불러오지 못했습니다. '+(e.message&&!/fetch|Load failed|NetworkError/i.test(e.message)?e.message+' ':'')+NET_HELP; }
+    loading=false; render();
+  };
+  $('#r-docview').onclick=()=>{ const el=$('#r-docpanel'); if(el){ el.scrollIntoView({behavior:'smooth', block:'start'}); } };
+  if(!rows.length){ $('#r-doc').onclick=()=>copy(resultDoc(s, analyze(s,[])),'결과 기안문을 복사했습니다'); return; }
+  const a=analyze(s,rows);
+  $('#r-csv').onclick=()=>saveFile(`${safeName(s.school)}_급식설문_응답.csv`, csvOf(s,rows), 'text/csv;charset=utf-8');
+  $('#r-report').onclick=()=>{ showReport=!showReport; render(); };
+  $('#r-doc').onclick=()=>copy(resultDoc(s,a),'결과 기안문을 복사했습니다');
+  const mkReport=async ()=>{
+    if(!window.JSZip){ toast('문서 기능을 불러오지 못했습니다. 인터넷 연결을 확인해 주세요.'); return; }
+    toast('결과보고서를 만드는 중입니다…');
+    try{ saveFile(`${safeName(s.school)}_학교급식_설문결과보고서.hwpx`, await reportHwpx(s, analyze(s,rowsOf(s)||[])), 'application/hwp+zip'); }
+    catch(e){ console.error(e); toast('결과보고서를 만들지 못했습니다.'); }
+  };
+  $('#r-hwpx').onclick=mkReport; ['#r-hwpx2','#r-hwpx3'].forEach(id=>{ const b=$(id); if(b) b.onclick=mkReport; });
+  $('#r-ai').onclick=()=>copy(aiPrompt(s,a),'AI 분석 요청문을 복사했습니다. Claude나 ChatGPT에 붙여넣으세요');
+  document.querySelectorAll('[data-note]').forEach(t=>t.oninput=()=>{ (S.notes[s.id] ||= {})[t.dataset.note]=t.value; save(); });
+  document.querySelectorAll('[data-reset]').forEach(b=>b.onclick=()=>{ const k=b.dataset.reset; if(S.notes[s.id]) delete S.notes[s.id][k]; save(); render(); });
+}
+
+/* =========================================================
+   학생 화면
+   ========================================================= */
+let ST = {};          // 학생 진행 상태
+let SURV = null;      // 학생에게 보여줄 설문
+let BOOT = null;      // 실제 학생 링크로 들어온 경우 {mb, sid}
+function resetStudent(){ ST={step:0, grade:'', cls:'', likes:[], answers:{}, sending:false, err:''}; }
+function studentShell(){ return `<div class="phone-wrap"><div class="phone" id="phone"></div></div>`; }
+function stepsOf(s){
+  const st=[{k:'intro'},{k:'info'}];
+  allMenus(s).forEach(c=>st.push({k:'menu', c}));
+  surveyQs(s).forEach(q=>st.push({k:q.type, q}));
+  st.push({k:'submit'});
+  return st;
+}
+function renderStudent(){
+  const ph=$('#phone');
+  const s = BOOT ? SURV : (studentSid==='__draft' ? draft : survey(studentSid));
+  if(!s){ ph.innerHTML=`<div class="s-body done"><p class="s-text">${BOOT? esc(ST.err||'설문을 불러오는 중입니다…') : '미리볼 설문이 없습니다.'}</p></div>`; return; }
+  const doneKey='done-'+s.id;
+  if(BOOT && store.get(doneKey) && ST.step!=='done'){ ph.innerHTML=`<div class="s-body done"><div class="big">✅</div><h2 class="s-title">이미 참여했어요</h2><p class="s-text">이 휴대폰으로는 이미 응답을 보냈습니다.\n참여해 주셔서 고마워요!</p></div>`; return; }
+  if(ST.step==='done'){ ph.innerHTML=`<div class="s-body done"><div class="big">💚</div><h2 class="s-title">응답을 보냈어요</h2><p class="s-text">소중한 의견 고마워요.\n더 맛있는 급식으로 보답할게요!</p>${(!BOOT && S.mailbox)?'<p class="s-hint">미리보기 응답은 저장되지 않습니다. 실제 응답은 학생용 링크나 QR로 들어가서 해 주세요.</p>':''}${!BOOT?'<button class="btn" id="s-again">처음부터 다시 해보기</button>':''}</div>`;
+    const ag=$('#s-again'); if(ag) ag.onclick=()=>{ resetStudent(); renderStudent(); }; return; }
+  const steps=stepsOf(s); const cur=steps[ST.step]; const total=steps.length-1;
+  const progress = Math.round(ST.step/total*100);
+  let body='', canNext=true, nextLabel='다음';
+  if(cur.k==='intro'){
+    body=`<div class="s-kicker">${esc(s.school)}</div><h2 class="s-title">${esc(s.title)}</h2><p class="s-text">${esc(s.intro)}</p><p class="s-hint">설문 기간: ${fmtDate(s.start)} ~ ${fmtDate(s.end)}</p>`;
+    nextLabel='시작하기';
+  } else if(cur.k==='info'){
+    body=`<div class="s-kicker">기본 정보</div><h2 class="s-title">학년과 반을 골라 주세요</h2>
+      <div class="sel2"><select id="s-grade" aria-label="학년"><option value="">학년</option>${s.grades.map(g=>`<option ${+ST.grade===g?'selected':''} value="${g}">${g}학년</option>`).join('')}</select>
+      <select id="s-cls" aria-label="반"><option value="">반</option>${Array.from({length:s.classes},(_,i)=>`<option ${+ST.cls===i+1?'selected':''} value="${i+1}">${i+1}반</option>`).join('')}</select></div>
+      <p class="s-hint">이름과 학번은 묻지 않아요.</p>`;
+    canNext = ST.grade && ST.cls;
+  } else if(cur.k==='menu'){
+    const n = cur.c.list.filter(m=>ST.likes.includes(m)).length;
+    body=`<div class="s-kicker">기호도 조사 · ${cur.c.name}</div><h2 class="s-title">좋아하는 식단을 모두 선택해 주세요</h2>
+      <div class="picks">${cur.c.list.map(m=>`<button class="pick" data-like="${esc(m)}" aria-pressed="${ST.likes.includes(m)}"><span class="box">✓</span>${esc(m)}</button>`).join('')}</div>
+      <p class="s-hint">${n?`${n}개 선택했어요.`:'좋아하는 식단이 없으면 그냥 다음을 누르세요.'}</p>`;
+  } else if(cur.k==='scale'){
+    const v=ST.answers[cur.q.id];
+    body=`<div class="s-kicker">급식 이야기 · ${cur.q.group||''}</div><h2 class="s-title">${esc(cur.q.text)}</h2>
+      <div class="scale">${LIKERT.map(l=>`<button data-v="${l.v}" aria-pressed="${v===l.v}"><span class="e">${l.e}</span>${l.t}</button>`).join('')}</div>`;
+    canNext = !!v;
+  } else if(cur.k==='text'){
+    body=`<div class="s-kicker">자유롭게 적어 주세요 (선택)</div><h2 class="s-title">${esc(cur.q.text)}</h2>
+      <textarea id="s-text" rows="4" maxlength="200" placeholder="예: 마라탕, 로제떡볶이">${esc(ST.answers[cur.q.id]||'')}</textarea>
+      <p class="s-hint">적지 않아도 ‘다음’을 눌러 넘어갈 수 있어요.</p>`;
+  } else if(cur.k==='submit'){
+    body=`<div class="s-kicker">마지막 단계</div><h2 class="s-title">응답을 보낼까요?</h2>
+      <p class="s-text">${ST.grade}학년 ${ST.cls}반 · 좋아하는 식단 ${ST.likes.length}개 선택</p>
+      ${ST.err?`<p class="err">${esc(ST.err)}</p>`:''}`;
+    nextLabel = ST.sending ? '보내는 중…' : (ST.err?'다시 보내기':'응답 보내기');
+  }
+  ph.innerHTML = `
+    <div class="s-top"><div class="s-school"><span>${esc(s.school)}</span><span class="num">${ST.step}/${total}</span></div>
+      <div class="prog"><i style="width:${progress}%"></i></div></div>
+    <div class="s-body">${body}</div>
+    <div class="s-foot">${ST.step>0?'<button class="btn back" id="s-back" aria-label="이전">이전</button>':''}
+      <button class="btn primary" id="s-next" ${(!canNext||ST.sending)?'disabled':''}>${nextLabel}</button></div>`;
+  const go = d => { ST.step=Math.max(0,Math.min(total,ST.step+d)); renderStudent(); $('#phone').scrollIntoView({block:'start'}); };
+  const back=$('#s-back'); if(back) back.onclick=()=>{ saveText(cur); go(-1); };
+  $('#s-next').onclick=()=>{ saveText(cur); if(cur.k==='submit') submitStudent(s); else go(1); };
+  if(cur.k==='info'){ $('#s-grade').onchange=e=>{ST.grade=e.target.value; renderStudent();}; $('#s-cls').onchange=e=>{ST.cls=e.target.value; renderStudent();}; }
+  document.querySelectorAll('[data-like]').forEach(b=>b.onclick=()=>{ const m=b.dataset.like; ST.likes = ST.likes.includes(m)? ST.likes.filter(x=>x!==m) : ST.likes.concat(m); renderStudent(); });
+  document.querySelectorAll('.scale [data-v]').forEach(b=>b.onclick=()=>{ ST.answers[cur.q.id]=+b.dataset.v; renderStudent(); setTimeout(()=>{ if(steps[ST.step]===cur) go(1); }, 260); });
+}
+function saveText(cur){ const t=$('#s-text'); if(t && cur.q) ST.answers[cur.q.id]=t.value.trim(); }
+async function submitStudent(s){
+  const body={action:'submit', surveyId:s.id, grade:+ST.grade, cls:+ST.cls, likes:ST.likes, answers:ST.answers, rid:ST.rid||(ST.rid=uid(12))};
+  if(BOOT && BOOT.mb){
+    ST.sending=true; ST.err=''; renderStudent();
+    try{ await mbPost(mailboxUrl(BOOT.mb), body, 4); store.set('done-'+s.id, true); ST.step='done'; }
+    catch(e){ ST.err = e.final ? e.message : '인터넷 연결이 불안정해서 보내지 못했어요. 잠시 뒤 다시 보내기를 눌러 주세요.'; }
+    ST.sending=false; renderStudent(); return;
+  }
+  // 체험 모드에서만 선생님 브라우저에 저장 (연결된 상태의 미리보기 응답은 저장하지 않음)
+  if(!S.mailbox && s.id!=='__draft' && survey(s.id)){
+    (S.responses[s.id] ||= []).push({at:new Date().toISOString(), grade:body.grade, cls:body.cls, likes:body.likes, answers:body.answers}); save();
+  }
+  if(BOOT) store.set('done-'+s.id, true);
+  ST.step='done'; renderStudent();
+}
+
+/* =========================================================
+   시작
+   ========================================================= */
+(async function boot(){
+  S = store.get(KEY) || seed();
+  const q = new URLSearchParams(location.search);
+  if(q.get('s') && (q.get('u') || q.get('demo'))){
+    // 학생이 링크/QR로 들어온 경우: 학생 화면만 보여줌
+    BOOT = {mb:q.get('u'), sid:q.get('s')}; resetStudent();
+    document.title = '학교급식 설문조사';
+    $('#app').innerHTML = studentShell();
+    if(BOOT.mb){
+      try{ const r=await mbGet(mailboxUrl(BOOT.mb), {action:'survey', id:BOOT.sid}); SURV=r.survey; }
+      catch(e){ ST.err = '설문을 불러오지 못했어요. 링크가 맞는지 선생님께 확인해 주세요.'; }
+    } else { SURV = survey(BOOT.sid); if(!SURV) ST.err='이 브라우저에 저장된 설문이 아닙니다.'; }
+    renderStudent(); return;
+  }
+  render();
+})();
+</script>
+</body>
+</html>
